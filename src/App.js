@@ -32,16 +32,22 @@ class App extends Component {
         return (
             <div>
                 <Navbar color="inverse" light expand="md">
-                    <NavbarBrand href="/">reactstrap</NavbarBrand>
+                <NavbarBrand href="/">
+                  <img src="meditrack-162x60.png" height="30" class="d-inline-block align-top" alt=""/>
+                </NavbarBrand>
                     <NavbarToggler onClick={this.toggle} />
                     <Collapse isOpen={this.state.isOpen} navbar>
                         <Nav className="ml-auto" navbar>
                             <NavItem>
-                                <NavLink href="/components/">Components</NavLink>
+                                <NavLink href="/components/">Requests</NavLink>
                             </NavItem>
                             <NavItem>
-                                <NavLink href="https://github.com/reactstrap/reactstrap">Github</NavLink>
+                                <NavLink href="https://github.com/reactstrap/reactstrap">Admin</NavLink>
                             </NavItem>
+                            <NavItem>
+                                <NavLink href="https://explorer.chromia.dev">Blockchain</NavLink>
+                            </NavItem>
+                
                         </Nav>
                     </Collapse>
                 </Navbar>
@@ -49,18 +55,30 @@ class App extends Component {
                     <Container>
                         <Row>
                             <Col>
-                                <h1>Welcome to React</h1>
+                                <h1>Meditrack</h1>
                                 <p>
                                     <Button
                                         tag="a"
-                                        color="success"
+                                        color="secondary"
                                         size="large"
                                         href="http://reactstrap.github.io"
                                         target="_blank"
                                     >
-                                        View Reactstrap Docs
+                                        Get started
+                                    </Button>
+                </p>
+                                <p>
+                                    <Button
+                                        tag="a"
+                                        color="info"
+                                        size="large"
+                                        href="http://reactstrap.github.io"
+                                        target="_blank"
+                                    >
+                                        Other accent color
                                     </Button>
                                 </p>
+                
                             </Col>
                         </Row>
                     </Container>

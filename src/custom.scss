@@ -1,0 +1,36 @@
+
+// https://getbootstrap.com/docs/4.3/getting-started/theming/
+// https://create-react-app.dev/docs/adding-bootstrap/
+
+
+// Override default variables before the import
+//$body-bg: #ababab;
+
+// Custom.scss
+
+/*
+Red on white main color
+Red #B11B1B
+White: #fff
+Text color : black 
+Accent color: Dark cyan (Hex code #008B8B)
+Accent color 2: #3E0000
+*/
+
+
+$primary:       #b11b1b;
+$secondary:     #008b8b;
+$info:  #3E0000;
+
+/*
+$success:       $green !default;
+$info:          $cyan !default;
+$warning:       $yellow !default;
+$danger:        $red !default;
+$light:         $gray-100 !default;
+$dark:          $gray-800 !default;
+*/
+
+
+// Import Bootstrap and its default variables
+@import '~bootstrap/scss/bootstrap.scss';

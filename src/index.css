@@ -11,3 +11,30 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/*colors 
+Red on white main color
+Red #B11B1B
+White: #fff
+Text color : black 
+Accent color: Dark cyan (Hex code #008B8B)
+Accent color 2: #3E0000
+
+*/
+
+.medi-color {
+    color: #B11B1B;
+}
+
+.medi-bgcolor {
+    background-color: #B11B1B;
+}
+
+
+.medi-accent-one {
+    color: #008b8b;
+}
+
+.medi-accent-two {
+    color: #3e0000;
+}
