@@ -9,7 +9,7 @@ Status is unfinished.
 react, bootstrap.
 
 `blockchain` is for the blockchain implementation in
-[https://rell.chromia.com](rell), on Chromia, a relational blockchain.
+[rell](https://rell.chromia.com), on [Chromia](https://chromia.com), a relational blockchain.
 
 
 In the project directory, you can run:
