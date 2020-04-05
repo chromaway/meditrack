@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import {
+    Card,
     Collapse,
     Navbar,
     NavbarToggler,
@@ -13,6 +14,8 @@ import {
     Jumbotron,
     Button
 } from 'reactstrap';
+
+import OrdersList from './OrdersList';
 
 class App extends Component {
     constructor(props) {
@@ -67,25 +70,34 @@ class App extends Component {
                                         Get started
                                     </Button>
                 </p>
-                                <p>
-                                    <Button
-                                        tag="a"
-                                        color="info"
-                                        size="large"
-                                        href="http://reactstrap.github.io"
-                                        target="_blank"
-                                    >
-                                        Other accent color
-                                    </Button>
-                                </p>
                 
                             </Col>
                         </Row>
                     </Container>
                 </Jumbotron>
+                <Card>
+                  <div className="card-body">
+                    <h2 className="card-title">My requests</h2>
+                  
+                    <OrdersList/>
+                  </div>
+                </Card>
             </div>
         );
     }
 }
 
 export default App;
+
+
+                                // <p>
+                                //     <Button
+                                //         tag="a"
+                                //         color="info"
+                                //         size="large"
+                                //         href="http://reactstrap.github.io"
+                                //         target="_blank"
+                                //     >
+                                //         Other accent color
+                                //     </Button>
+                                // </p>
