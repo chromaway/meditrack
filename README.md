@@ -5,7 +5,12 @@ A project done for the Hack the Crisis hackathon 2020.
 Status is unfinished.
 
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+`src` and `public` directories are for the client. Implementation with
+react, bootstrap.
+
+`blockchain` is for the blockchain implementation in
+[https://rell.chromia.com](rell), on Chromia, a relational blockchain.
+
 
 In the project directory, you can run:
 
