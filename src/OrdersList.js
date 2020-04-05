@@ -3,11 +3,25 @@ import logo from './logo.svg';
 import './App.css';
 import { Button } from 'reactstrap';
 
+import {getEquipment} from './equipment';
+
 var ORDERED='ORDERED';
 var ACCEPTED='ACCEPTED';
 var REJECTED='REJECTED';
 
+
+
+
 class OrderLine extends React.Component {
+  constructor(props) {
+    super(props);
+    this.handleViewClick = this.handleViewClick.bind(this);
+  }    
+
+    handleViewClick(e) {
+        this.props.onViewClick(this.props.id);//Raise event 
+    }
+    
     render() {
         const status = {
             ORDERED: 'Ordered',
@@ -22,13 +36,27 @@ class OrderLine extends React.Component {
                 <td>{this.props.equipment}</td>
                 <td>{this.props.quantity}</td>
                 <td>{status[this.props.status]}</td>
+                <td><Button onClick={this.handleViewClick} type="button" className="btn btn-secondary btn-sm">View</Button></td>
         </tr>
         );
     }
 }
 
 //
-function OrdersList() {
+
+class OrdersList extends React.Component {
+  constructor(props) {
+    super(props);
+    this.handleViewClick = this.handleViewClick.bind(this);
+  }    
+
+    handleViewClick(e) {
+        this.props.onViewClick(e);//Raise event 
+    }
+    
+    render () {
+        var obj = getEquipment();
+    console.log("EEQuipment:", obj);    
     return (
 <table className="table">
   <thead className="thead-dark">
@@ -37,10 +65,43 @@ function OrdersList() {
       <th scope="col">Date</th>
       <th scope="col">Equipment</th>
       <th scope="col">Quantity</th>
-      <th scope="col">Status</th>            
+            <th scope="col">Status</th>
+      <th scope="col">View</th>                
     </tr>
   </thead>
             <tbody>
+            {
+                Object.entries(obj).map(([k, v]) =>
+                                        <OrderLine
+                                        key={v.id}
+                                        onViewClick = {this.handleViewClick}
+                                        id={v.id}
+            index={v.index}
+            date={v.date}
+            equipment={v.equipment}
+            quantity={v.quantity}
+            status={v.status}
+                    />)
+            }
+            
+  </tbody>
+</table>
+        
+  );
+    }
+}
+
+export default OrdersList;
+
+
+
+
+
+
+
+
+
+/*        
     <OrderLine index='1'
         date='2020-04-12'
         equipment='Respirators'
@@ -72,11 +133,4 @@ function OrdersList() {
         status='ACCEPTED'
             />
             
-            
-  </tbody>
-</table>
-        
-  );
-}
-
-export default OrdersList;
+*/
