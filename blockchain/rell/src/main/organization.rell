@@ -1,0 +1,41 @@
+import .admin;
+
+enum organization_type {
+	HOSPITAL,
+	GOVERNMENTAL_ORGANIZATION
+}
+
+entity organization {
+	key name;
+	organization_type;
+	location;
+}
+
+operation create_organization(name, organization_type_text: text, location_name: name) {
+	admin.require_admin();
+	
+	var organization_type_: organization_type;
+	
+	when(organization_type_text) {
+		"HOSPITAL" -> organization_type_ = organization_type.HOSPITAL;
+		"GOVERNMENTAL_ORGANIZATION" -> organization_type_ = organization_type.GOVERNMENTAL_ORGANIZATION;
+		else -> organization_type_ = organization_type.HOSPITAL;
+	} 
+	
+	create organization(
+		name,
+		.organization_type = organization_type_,
+		location@{location_name}
+	);
+}
+
+
+query get_organization(name) {
+	return organization@{
+		name
+	}(
+		name = .name,
+		organization_type = .organization_type,
+		location = .location.name
+	);
+}

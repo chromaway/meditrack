@@ -1,0 +1,36 @@
+
+import c: ^.component;
+import e: ^.entitee;
+import n: ^.nfa;
+import t: ^.supported_types;
+
+
+// TODO wrong on many layers, we shouldn't create component_structure out of nothing
+operation easy_create_nfa(
+	name, desc: text, 
+	max_entities: integer, 
+	propertiesI: list<c.component_iface>, 
+	account_id: byte_array, 
+	auth_descriptor_id: byte_array
+) {
+	
+	// TODO Move this computation on client side
+	val components_structure = map<name, c.component_def>();
+	for(prop in propertiesI) {	
+		print("PROP", prop);
+		val componentStructure = c.ensureComponent(prop.name, prop.blockchain_rid, prop.type, prop.extra);
+		components_structure.put(prop.name, c.component_def(
+			componentStructure,
+			c.component_req(
+				is_required = prop.required,
+				is_mutable = not prop.readonly
+			)
+		));
+	}
+	n.createNFA(name, desc, max_entities, components_structure);
+}
+
+
+operation register_nfa(name, desc: text, max_entities: integer, properties: map<name, c.component_def>) {
+	n.createNFA(name, desc, max_entities, properties);
+}

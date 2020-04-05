@@ -1,0 +1,30 @@
+import ft3: ^.core;
+
+struct xc_target {
+    account_id: byte_array;
+    extra: map<text, gtv>;
+}
+
+function add_to_blockchain_balance (blockchain_rid: byte_array, ft3.asset, amount: integer) {
+    require( chain_context.blockchain_rid != blockchain_rid ); // cannot add to own account
+
+    val origin_chain_rid = asset_origin @? { asset } .origin_chain_rid;
+
+    if (exists(origin_chain_rid) and (blockchain_rid == origin_chain_rid)) {
+       // do nothing. in future we might track origin
+    } else {
+         val bc_acc = ensure_blockchain_account(blockchain_rid);
+         ft3.ensure_balance(bc_acc, asset).amount += amount;
+    }
+}
+
+
+struct init_xfer_args {
+          source: ft3.xfer_input;
+          target: xc_target;
+          hops: list<byte_array>;
+}
+
+entity applied_transfers { key tx_rid: byte_array; }
+
+

@@ -1,0 +1,22 @@
+
+
+
+query get_entity(entity_id: byte_array, components_to_retrieve: list<text>) {
+	val e = entitee @? {.id == entity_id};
+	
+	if (e == null) {
+		return null;
+	} else {
+		return getEntitee(e!!);	
+	}
+}
+
+query get_entity_by_id_and_nfa_name(entity_id: byte_array, nfa_name: text, components_to_retrieve: list<text>) {
+	val e = entitee @? {.id == entity_id, .nfa.id == (nfa_name.lower_case(), chain_context.blockchain_rid).hash()};
+	
+	if (e == null) {
+		return null;
+	} else {
+		return getEntitee(e!!);	
+	}
+}

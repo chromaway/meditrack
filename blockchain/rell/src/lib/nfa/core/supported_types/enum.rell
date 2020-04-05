@@ -1,0 +1,43 @@
+/* **********************
+ *		ENUM
+ * ********************** 
+ */
+ 
+ 
+import e: ^.entitee;
+import p: ^.property;
+
+struct extra_enum_component_structure {
+	// this class is only used with enum types, assume enum are all text for now (but maybe forever)
+	enums: list<text>;
+}
+
+function convert_to_enum_extra(extra: gtv):extra_enum_component_structure {
+	// TODO, this could be optimized
+	val extraEnum = extra_enum_component_structure.from_gtv(extra);
+	val allowed_values = extraEnum.enums;
+	require(allowed_values.size() < 256, "You can create maximum 256 enum items");
+	val enums = set<text>();
+	for (allowed_value in allowed_values) {
+		enums.add(allowed_value.lower_case()); 
+	}
+	extraEnum.enums.clear();
+	extraEnum.enums.add_all(enums.sorted());
+	
+	return extraEnum;
+}
+
+function sanitize_gtv_to_enum(gtvValue: gtv, componentStructureExtra: byte_array): text {
+	val componentValue = text.from_gtv(gtvValue);
+	val extra = extra_enum_component_structure.from_bytes(componentStructureExtra);
+	return componentValue;
+}
+
+function ensureEnumProperty(e: e.entitee, p: p.property, value: text) {
+	val isProperty = p.enum_property@?{e, p};
+	if(isProperty != null) {
+		update p.enum_property@{e, p}(.value = value);	
+	} else {
+		create p.enum_property(e, p, value);
+	}
+}

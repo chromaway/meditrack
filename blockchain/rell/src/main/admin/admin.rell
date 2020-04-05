@@ -1,0 +1,4 @@
+function require_admin() {
+	require(is_signer(x"024D7A49878382169871F2C7320B6C91EA97C9DE89316996DAE4D3BC5E7DCB9E67"));
+}
+

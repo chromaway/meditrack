@@ -1,0 +1,9 @@
+.git
+.idea
+node_modules
+build
+
+logs/
+postchain.pid
+postchain/runtime/
+*.zip

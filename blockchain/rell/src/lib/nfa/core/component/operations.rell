@@ -1,0 +1,6 @@
+
+import c: ^.component;
+
+operation create_component_structure(new_c: c.component_iface) {
+	c.createComponent(new_c.name, new_c.type, new_c.extra);
+}

@@ -1,0 +1,15 @@
+\.DS_Store
+.project
+.settings/
+logs/
+postchain.pid
+postchain/runtime/
+*.zip
+
+build
+logs/
+postchain.pid
+postchain/runtime/
+*.zip
+postchain/pgdata/
+.secret

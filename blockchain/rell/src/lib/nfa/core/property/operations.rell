@@ -1,0 +1,93 @@
+
+import c: ^.component;
+import e: ^.entitee;
+import p: ^.property;
+import t: ^.supported_types;
+
+import own: ^^.ft3.ownership;
+
+operation update_property(
+	entity_id: byte_array, 
+	property_name: text, 
+	value: gtv,
+	account_id: byte_array, 
+	auth_descriptor_id: byte_array
+) {
+	val e = e.entitee @ { entity_id };
+	
+	own.require_ownership(e, auth_descriptor_id);
+	
+	val id = (e.nfa.name, property_name, chain_context.blockchain_rid).hash();
+	
+	val prop = property @ { e.nfa, property_name };
+	val comp = prop.component;
+	
+	require(prop.is_mutable, 'Property is not mutable');
+	
+	when (comp.type) {
+		t.type.INTEGER -> {
+			update p.integer_property @ { prop, e } ( value = integer.from_gtv(value) ); 
+		}
+		t.type.ENUM -> {
+			update p.enum_property @ { prop, e } ( value = text.from_gtv(value) ); 
+		}
+		t.type.TEXT -> {
+			update p.text_property @ { prop, e } ( value = text.from_gtv(value) );
+		}
+		t.type.DECIMAL -> {
+			update p.decimal_property @ { prop, e } ( value = decimal.from_gtv(value) );
+		}
+		t.type.BYTE_ARRAY -> {
+			update p.bytes_property @ { prop, e } ( value = byte_array.from_gtv(value) );
+		}
+		t.type.NFA -> {
+			val np = p.nfa_property @? { prop, .entitee == e };
+			if (np == null) {
+				val propertyValue = t.sanitize_gtv_to_nfa(value, comp.extra);
+				create p.nfa_property(.entitee = e, prop, .value = propertyValue);
+			} else {
+				np!!.value = t.sanitize_gtv_to_nfa(value, comp.extra);
+			}
+		}
+	}
+}
+
+/*
+ * Deletes property on an nfa entity (not nfa itself).
+ */
+operation delete_property(
+	entity_id: byte_array, 
+	property_name: text,
+	account_id: byte_array, 
+	auth_descriptor_id: byte_array
+) {
+	val e = e.entitee @ { entity_id };
+		
+	own.require_ownership(e, auth_descriptor_id);
+	
+	val prop = property @ { e.nfa, property_name };
+	val comp = prop.component;
+	
+	require(prop.is_mutable and prop.is_required == false, 'Property is not mutable');
+	
+	when (comp.type) {
+		t.type.INTEGER -> {
+			delete p.integer_property @? { prop, e }; 
+		}
+		t.type.ENUM -> {
+			delete p.enum_property @? { prop, e }; 
+		}
+		t.type.TEXT -> {
+			delete p.text_property @? { prop, e };
+		}
+		t.type.DECIMAL -> {
+			delete p.decimal_property @? { prop, e };
+		}
+		t.type.BYTE_ARRAY -> {
+			delete p.bytes_property @? { prop, e };
+		}
+		t.type.NFA -> {
+			delete p.nfa_property @? { prop, .entitee == e };
+		}
+	}
+}

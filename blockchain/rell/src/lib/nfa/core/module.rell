@@ -1,0 +1,12 @@
+@mount('nfa')
+module;
+
+import .component;
+import .entitee;
+import .nfa;
+import .property;
+
+namespace ft3 {
+	import ^^.ft3.ft3_basic;
+	import ^^.ft3.account;
+}

@@ -1,0 +1,11 @@
+module;
+
+import lf: lib.ft3.ft3_basic_dev;
+
+namespace nfa {
+	import c: lib.nfa.core.component;
+	import e: lib.nfa.core.entitee;
+	import n: lib.nfa.core.nfa;
+	import p: lib.nfa.core.property;
+	import t: lib.nfa.core.supported_types;
+}

@@ -1,0 +1,39 @@
+/* **********************
+ *		DECIMAL
+ * ********************** 
+ */
+ 
+ 
+import e: ^.entitee;
+import p: ^.property;
+
+struct extra_decimal_component_structure {
+	min_val: integer; // minimum value allowed (e.g. negative numbers not allowed) 
+	max_val: integer; // max value allowed or byte_lenght
+	decimals: integer; // how many decimals?
+}
+
+function convert_to_decimal_extra(extra: gtv): extra_decimal_component_structure {
+	val extraDecimal = extra_decimal_component_structure.from_gtv(extra);
+	require(extraDecimal.min_val < extraDecimal.max_val, "Min value must be smaller than max value");
+	require(extraDecimal.decimals >= 0, "Can't have negative number of decimals");
+	return extraDecimal;
+}
+
+function sanitize_gtv_to_decimal(gtvValue: gtv, componentExtra: byte_array): decimal {
+	val propertyValue = decimal.from_gtv(gtvValue);
+	val extra = extra_decimal_component_structure.from_bytes(componentExtra);
+	require(propertyValue >= extra.min_val, "Value <%x> can't be smaller than <%x>".format(propertyValue).format(extra.min_val));
+	require(propertyValue <= extra.max_val, "Value <%x> can't be greater than <%x>".format(propertyValue).format(extra.min_val));
+	return propertyValue.round(extra.decimals);
+}
+
+function ensureDecimalProperty(e: e.entitee, p: p.property, value: decimal) {
+	val isProperty = p.decimal_property@?{e, p};
+	
+	if(isProperty != null) {
+		update p.decimal_property@{e, p}(.value = value);	
+	} else {
+		create p.decimal_property(e, p, value);
+	}	
+} 
