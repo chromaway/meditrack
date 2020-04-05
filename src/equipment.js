@@ -2,10 +2,13 @@ var equipment = {}
 
 var id = 1000;
 
+var gtbg = 'Sahlgrenska'
+
 function mkEquipment(data){
     data.id = id;
     id = id +1;
-    equipment[data.index] = data;
+    data.from = data.from || gtbg;
+    equipment[data.id] = data;
 }
 
 function getEquipment() {
@@ -13,11 +16,12 @@ function getEquipment() {
 }
 
 
+
 function init() {
     
     mkEquipment( { index:'1',
                  date:'2020-04-12',
-                 equipment:'Respirators',
+                 equipment:'Respirators', 
                  quantity:'4',
                   status:'ORDERED'})
 
