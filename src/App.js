@@ -24,12 +24,20 @@ class App extends Component {
 
         this.toggle = this.toggle.bind(this);
         this.state = {
+            helloOpen: true,
             isOpen: false,
             viewId: false
         };
+
+        this.onGetStartedClick=this.onGetStartedClick.bind(this);
         this.onViewClick=this.onViewClick.bind(this);
         this.onViewClose=this.onViewClose.bind(this);        
     }
+    onGetStartedClick(id) {
+        this.setState({helloOpen: false});
+    }
+    
+    
     toggle() {
         this.setState({
             isOpen: !this.state.isOpen
@@ -65,25 +73,28 @@ class App extends Component {
                         </Nav>
                     </Collapse>
                 </Navbar>
-                
+                {this.state.helloOpen? 
                 <Jumbotron>
                     <Container>
                         <Row>
                             <Col>
-                                <h2>Meditrack</h2>
+                 <h2>Welcome to Meditrack</h2>
+                 <p>A tool for solidarity and effient allocation during an emergency.</p>
                                     <Button
-                                        tag="a"
+                                        tag="button"
                                         color="secondary"
                                         size="large"
-                                        href="http://reactstrap.github.io"
-                                        target="_blank"
+                                        onClick={this.onGetStartedClick}
                                     >
                                         Get started
                                     </Button>
-                            </Col>
+                 </Col>
+                 
                         </Row>
                     </Container>
-                </Jumbotron>
+                 </Jumbotron>
+                 : <div></div>
+                }
                 
                 <Card>
                   <div className="card-body">
