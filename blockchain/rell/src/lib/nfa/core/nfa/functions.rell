@@ -1,0 +1,41 @@
+
+import p: ^.property;
+import c: ^.component;
+
+function createNFA(name, desc: text, max_entities: integer,components: map<name, c.component_def>): nfa {
+	val nfa = createNFAClass(name, desc, max_entities);
+	
+	for((propertyName, componentDef) in components) {
+//		val componentStructure = ensureComponentStructure(componentDef.component_structure);
+		val component = c.component@{.id == componentDef.component.id};
+		val is_required = componentDef.component_req.is_required;
+		val is_mutable = componentDef.component_req.is_mutable;
+				
+		create p.property(nfa, component, propertyName, is_required, is_mutable);
+	}
+	
+	return nfa;
+}
+
+function easyCreateNFA(name, desc: text, max_entities: integer, components: map<name, (byte_array, boolean, boolean)>): nfa {
+	val nfa = createNFAClass(name, desc, max_entities);
+	
+	for((propertyName, (componentId, is_required, is_mutable)) in components) {
+		val component = c.component@{.id == componentId};
+		create p.property(nfa, component, propertyName, is_required, is_mutable);
+	}
+	return nfa;
+}
+
+function createNFAClass(name, desc: text, max_entities: integer): nfa {
+	
+	val id = (name.lower_case(), chain_context.blockchain_rid).hash();
+	
+	return create nfa(
+		.name = name.lower_case(),
+		id,
+		desc,
+		max_entities
+//		.version = 0.00
+	);
+}

@@ -1,0 +1,121 @@
+
+import own: ^^.ft3.ownership;
+import n: ^.nfa;
+import p: ^.property;
+import t: ^.supported_types; 
+
+function createEntitee(nfa: n.nfa, id: byte_array, entity_components: map<text, gtv>): entitee {
+	val entityIdx = (entitee@*{nfa}).size();
+	print(entityIdx);
+	require(entityIdx < nfa.max_entities, "Maximum amount of nfa entities already created");
+	val newEntity = create entitee(nfa, entityIdx, id);
+	
+	val requiredComponents = p.property@*{nfa, .is_required == true}.component;
+	
+	for((componentName, gtvValue) in entity_components) {
+		val property = require_not_empty(p.property@?{nfa, .name == componentName});
+		val component = property.component;
+		// check that the required components are in here.
+		if(property.is_required){
+			requiredComponents.remove(component);			
+		}
+		
+		when(component.type) {
+			t.type.INTEGER -> {
+				print("integer");
+				val propertyValue = t.sanitize_gtv_to_integer(gtvValue, component.extra);
+				create p.integer_property(newEntity, property, propertyValue);
+			};
+			t.type.DECIMAL -> {
+				print("decimal");
+				val propertyValue = t.sanitize_gtv_to_decimal(gtvValue, component.extra);
+				create p.decimal_property(newEntity, property, propertyValue);
+			};
+			t.type.ENUM -> {
+				print("enum");
+				val propertyValue = t.sanitize_gtv_to_enum(gtvValue, component.extra);
+				create p.enum_property(newEntity, property, propertyValue);
+			};
+			t.type.TEXT -> {
+				print("text");
+				val propertyValue = text.from_gtv(gtvValue);
+				create p.text_property(newEntity, property, propertyValue);
+			};
+			t.type.BYTE_ARRAY -> {
+				print("byte_array");
+				val propertyValue = byte_array.from_gtv(gtvValue);
+				create p.bytes_property(newEntity, property, propertyValue);	
+			};
+			t.type.NFA -> {
+				print("nfa");
+				val propertyValue = t.sanitize_gtv_to_nfa(gtvValue, component.extra);
+				create p.nfa_property(.entitee = newEntity, property, .value = propertyValue);
+			};
+		}
+	}
+	
+	require(requiredComponents.size() == 0, "Not all the required components had been passed");
+	return newEntity;
+}
+ 
+ 
+ function modifyEntitee(auth_descriptor_id: byte_array?, entitee, entity_properties: map<name, gtv?>) {
+ 	
+ 	own.require_ownership(entitee, auth_descriptor_id);
+	
+	for ((propertyName, gtvValue) in entity_properties) {
+		val property = p.property@{entitee.nfa, .name == propertyName};
+		if(gtvValue != null) {
+			p.modifyProperty(entitee, property, gtvValue);
+		} else {
+			p.removeProperty(entitee, property);
+		}
+	}
+}
+
+
+function getEntitee(e: entitee): entity_description {
+	val properties = p.property@*{e.nfa};
+	val propertiesResult = map<text, gtv>();
+	val ics = p.integer_property @* { e };
+	val ecs = p.enum_property @* { e };
+	val tcs = p.text_property @* { e };
+	val dcs = p.decimal_property @* { e };
+	val bcs = p.bytes_property @* { e };
+	val ncs = p.nfa_property @* { .entitee == e };
+	
+	for (ic in ics) {
+		propertiesResult[ic.property.name] = ic.value.to_gtv();
+	}
+	
+	for (ec in ecs)  {
+		propertiesResult[ec.property.name] = ec.value.to_gtv();
+	}
+	
+	for (tc in tcs) {
+		propertiesResult[tc.property.name] = tc.value.to_gtv();
+	}
+	
+	for (dc in dcs) {
+		propertiesResult[dc.property.name] = dc.value.to_gtv();
+	}
+	
+	for (bc in bcs) {
+		propertiesResult[bc.property.name] = bc.value.to_gtv();
+	}
+	
+	for (nc in ncs) {
+		propertiesResult[nc.property.name] =  nc.value.id.to_gtv();
+	}
+	
+	return entity_description(
+		entity_obj(
+			id = e.id,
+			idx = e.idx,
+			nfa_id = e.nfa.id,
+			nfa_name = e.nfa.name
+		),
+		propertiesResult
+	);
+}
+

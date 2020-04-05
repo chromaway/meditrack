@@ -1,0 +1,14 @@
+
+import e: ^.entitee;
+import p: ^.property;
+import t: ^.supported_types;
+
+function ensureTextProperty(e: e.entitee, p: p.property, value: text) {
+	val isProperty = p.text_property@?{e, p};
+	
+	if(isProperty != null) {
+		update p.text_property@{e, p}(.value = value);	
+	} else {
+		create p.text_property(e, p, value);	
+	}
+}

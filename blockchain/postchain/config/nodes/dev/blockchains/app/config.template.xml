@@ -1,0 +1,26 @@
+  
+<run wipe-db="true">
+    <nodes>
+        <config src="../../node-config.properties" add-signers="true" />
+    </nodes>
+    <chains>
+        <chain name="YOUR_CHAIN_NAME" iid="0">
+            <config height="0">
+				<app module="main">
+                	<args module="lib.ft3.core">
+                		<arg key="my_blockchain_name"><string>YOUR_DAPP_NAME</string></arg>
+                		<arg key="my_blockchain_website"><string>YOUR_DAPP_WEBSITE</string></arg>
+                		<arg key="my_blockchain_description"><string>YOUR_DAPP_DESCRIPTION</string></arg>
+
+                        <!-- 0 for not active (no spam prevention) or 1 to acticate the rate limit-->
+                  		<!-- Mind that even if rate limit is not active, you must set some values in the following args -->
+                        <arg key="rate_limit_active"><int>1</int></arg> 
+                  		<arg key="rate_limit_max_points"><int>10</int></arg> <!-- maximum amount of requests that is possible to accomulate (and therefore make at once) -->
+                  		<arg key="rate_limit_recovery_time"><int>30000</int></arg> <!-- in milliseconds period of cool down before an account can receive one request point -->
+                  		<arg key="rate_limit_points_at_account_creation"><int>1</int></arg>  <!-- how many points an account can have at the moment of creation (0 is min) -->
+                	</args>
+                </app>
+            </config>
+        </chain>
+    </chains>
+</run>

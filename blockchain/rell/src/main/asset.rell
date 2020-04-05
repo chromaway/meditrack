@@ -1,0 +1,63 @@
+import .admin;
+
+entity asset_info {
+	key asset: nfa.e.entitee;
+	owner: organization;
+	mutable on_offer: boolean;
+}
+
+
+
+operation create_asset(account_id: byte_array, auth_descriptor_id: byte_array, name, description: text, disposable: integer, image: text) {
+	val user = require_user(account_id, auth_descriptor_id);
+	
+	val assetNFA = getAssetNFA();
+	val entityIdx = (nfa.e.entitee@*{assetNFA}).size()-1;
+	
+	val newAsset = nfa.e.createEntitee(assetNFA,
+		(name, entityIdx).hash(),
+		map<text, gtv>([
+			"name": (name).to_gtv(),
+			"description": (description).to_gtv(),
+			"disposable": (disposable).to_gtv(),
+			"image": (image).to_gtv()
+		])
+	);
+	
+	create asset_info(
+		newAsset,
+		user.organization,
+		false
+	);
+}
+
+operation asset_on_sale(account_id: byte_array, auth_descriptor_id: byte_array, asset_name: name) {
+	val user = require_user(account_id, auth_descriptor_id);
+	
+	update asset_info@{
+		nfa.p.text_property@{ 
+			nfa.p.property@{
+				.name == "name",
+				getAssetNFA()
+			},
+			.value == asset_name
+		}.entitee,
+		.owner == user.organization 
+	}(.on_offer = true);
+}
+
+operation asset_remove_on_sale(account_id: byte_array, auth_descriptor_id: byte_array, asset: nfa.e.entitee) {
+	val user = require_user(account_id, auth_descriptor_id);
+	
+	update asset_info@{
+		asset,
+		.owner == user.organization 
+	}(.on_offer = false);
+}
+
+
+function getAssetNFA(): nfa.n.nfa {
+	return nfa.n.nfa@{
+		.name == "asset"
+	};
+}

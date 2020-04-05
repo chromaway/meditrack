@@ -1,0 +1,33 @@
+//@mount('nfa')
+//module;
+
+import t: ^.supported_types;
+
+entity component {
+	key id: byte_array; // TODO: with blockchain_rid, id is now technically not required 
+	blockchain_rid: byte_array;
+	name;
+	type: t.type;
+	extra: byte_array;
+}
+
+
+struct component_req {
+	is_required: boolean = false;
+	is_mutable: boolean = true;
+}
+
+struct component_def {
+	component;
+	component_req;
+}
+
+struct component_iface {
+	id: byte_array;
+	name;
+	blockchain_rid: byte_array; 
+	type: t.type;
+	readonly: boolean;
+	required: boolean;
+	extra: gtv;
+}

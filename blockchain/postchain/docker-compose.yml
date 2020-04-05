@@ -1,0 +1,13 @@
+version: '3.1'
+
+services: 
+  postgres : 
+    image: chromaway/postgres:2.4.0-beta
+    restart: always
+    ports:
+      - 5433:5432
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: postchain
+  

@@ -1,0 +1,55 @@
+
+import p: ^.property;
+import t: ^.supported_types;
+
+function component_structure_name(name: text, type: t.type): text {
+	when (type) {
+		t.type.INTEGER -> {
+			return "integer"; 
+		}
+		t.type.ENUM -> {
+			return name.lower_case(); 
+		}
+		t.type.TEXT -> {
+			return "text";
+		}
+		t.type.DECIMAL -> {
+			return "decimal";
+		}
+		t.type.BYTE_ARRAY -> {
+			return "byte_array";
+		}
+		t.type.NFA -> {
+			return name.lower_case();
+		}
+	}
+}
+
+// TODO: this is create property
+function createComponent(name: text, type: t.type, extra: gtv?): component {
+	
+	val extra_serialized = t.serialize_extra(type, extra ?: list<gtv>().to_gtv());
+	
+	// all names are lower case to provide consistency use of snake-case is suggested
+	val nameLow = name.lower_case(); 
+	val newComponent = create component (
+		.name = nameLow,
+		.blockchain_rid = chain_context.blockchain_rid,
+		.id = (nameLow, extra_serialized, chain_context.blockchain_rid).hash(),
+		type,
+		.extra = extra_serialized
+	);
+	
+	return newComponent;
+}
+
+function ensureComponent(component_name: text, component_bc_rid: byte_array, component_type: t.type, extra: gtv): component {
+	val cs_name = component_structure_name(component_name, component_type);
+	val serialized_extra = t.serialize_extra(component_type, extra);
+
+	val isComponentStructure = component@?{
+		//.id == (component_name.lower_case(), component_bc_rid).hash()
+		.id == (component_name.lower_case(), serialized_extra, chain_context.blockchain_rid).hash()
+	};
+	return isComponentStructure?: createComponent(component_name, component_type, extra);
+}

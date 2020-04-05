@@ -1,0 +1,54 @@
+//@mount('nfa')
+//module;
+
+import c: ^.component;
+import e: ^.entitee;
+import n: ^.nfa;
+
+entity property { // e.g. color
+	nfa: n.nfa; // keep this?
+	c.component;
+	name;
+	is_required: boolean;  // is this component compulsory in the nfa?
+	is_mutable: boolean;
+	key name, nfa;
+}
+
+entity bytes_property {
+	key e.entitee, property;
+	mutable value: byte_array;
+}
+
+
+entity decimal_property {
+	key e.entitee, property;
+	mutable value: decimal;
+}
+
+
+entity enum_property {
+	key e.entitee, property;
+	mutable value: text;
+}
+
+
+entity integer_property {
+	key e.entitee, property;
+	mutable value: integer;
+}
+
+entity nfa_property {
+	key e.entitee, property;
+	mutable value: e.entitee;
+}
+
+entity text_property {
+	key e.entitee, property;	
+	mutable value: text;
+}
+
+
+struct property_value {
+	name;
+	value: gtv;
+}

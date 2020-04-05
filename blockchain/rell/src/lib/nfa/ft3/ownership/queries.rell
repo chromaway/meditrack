@@ -1,0 +1,13 @@
+
+import e: ^^.core.entitee;
+import acc: ^^^.ft3.account;
+
+query get_entities_by_owner(nfa_name: text, account_id: byte_array) {
+	val entities = ownership @* { .entitee.nfa.name == nfa_name.lower_case(), .account.id == account_id }.entitee;
+	
+	val entitiyDescriptionList = list<e.entity_description>();
+	for(entitee in entities) {
+		entitiyDescriptionList.add(e.getEntitee(entitee));
+	}
+	return entitiyDescriptionList;
+}

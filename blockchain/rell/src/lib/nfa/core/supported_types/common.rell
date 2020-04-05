@@ -1,0 +1,75 @@
+
+import e: ^.entitee;
+import p: ^.property;
+
+function get_value_from_property(e: e.entitee, p: p.property): gtv {
+	val component = p.component;
+	
+	val cv: gtv;
+	when(component.type) {
+			type.INTEGER -> {
+				cv = (p.integer_property@{e, p}.value).to_gtv();
+			};
+			type.DECIMAL -> {
+				cv = (p.decimal_property@{e, p}.value).to_gtv();
+			};
+			type.ENUM -> {
+				cv = (p.enum_property@{e, p}.value).to_gtv(); 
+			};
+			type.TEXT -> {
+				cv = (p.text_property@{e, p}.value).to_gtv();
+			};
+			type.BYTE_ARRAY -> {
+				cv = (p.bytes_property@{e, p}.value).to_gtv();
+			};
+			type.NFA -> {
+				cv = (p.nfa_property@{.entitee == e, p}.value.id).to_gtv();
+			};
+		}
+		return cv;
+}
+
+function type_extra_to_gtv_pretty(serialized_extra: byte_array, component_type: type): gtv {
+	when(component_type) {
+ 		type.INTEGER -> {
+			return extra_integer_component_structure.from_bytes(serialized_extra).to_gtv_pretty();
+ 		};
+ 		type.DECIMAL -> {
+
+			return extra_decimal_component_structure.from_bytes(serialized_extra).to_gtv_pretty();
+ 		};
+ 		type.ENUM -> {
+
+			return extra_enum_component_structure.from_bytes(serialized_extra).to_gtv_pretty();
+ 		};
+ 		type.NFA -> {
+			return extra_nfa_component_structure.from_bytes(serialized_extra).to_gtv_pretty();
+ 		};
+ 		else -> {
+			return list<gtv>().to_gtv_pretty();			
+ 		};
+ 	}
+}
+
+function serialize_extra(component_type: type, extra: gtv): byte_array {
+ 	when(component_type) {
+ 		type.INTEGER -> {
+			return convert_to_integer_extra(extra).to_bytes();
+ 		};
+ 		type.DECIMAL -> {
+
+			return convert_to_decimal_extra(extra).to_bytes();
+ 		};
+ 		type.ENUM -> {
+
+			return convert_to_enum_extra(extra).to_bytes();
+ 		};
+ 		type.NFA -> {
+
+			return convert_to_nfa_extra(extra).to_bytes();
+ 		};
+ 		else -> {
+			return x"";		
+ 		};
+ 	}
+}

@@ -1,0 +1,6 @@
+import e: ^.entitee;
+
+query get_property_value(entity_id: byte_array, property_name: text) {
+	val e = e.entitee@{.id == entity_id};
+	return getPropertyValue(e, property_name);
+}

@@ -1,0 +1,29 @@
+
+
+// no params so it can be called only one time
+operation create_nfa() {
+
+	
+	val assetNFA = createAssetNFA();
+}
+
+function createAssetNFA(): nfa.n.nfa {
+	val nameComponent = nfa.c.createComponent('name', nfa.t.type.TEXT, null);
+	val descriptionComponent = nfa.c.createComponent('description', nfa.t.type.TEXT, null);
+	val disposableComponent = nfa.c.createComponent("disposable", nfa.t.type.INTEGER, nfa.t.extra_integer_component_structure(min_val = 0, max_val = 1).to_gtv());
+	val imageURLComponent = nfa.c.createComponent('image_url', nfa.t.type.TEXT, null);
+	
+	val assetNFA = nfa.n.easyCreateNFA(
+		"asset",
+		"Asset that can be traded",
+		integer.MAX_VALUE,
+		map<name, (byte_array, boolean, boolean)>([
+			"name": (nameComponent.id, true, true),
+			"description": (descriptionComponent.id, false, true),
+			"disposable": (disposableComponent.id, true, true),
+			"image": (imageURLComponent.id, true, true)
+		])
+	);
+	
+	return assetNFA;
+}

@@ -1,0 +1,11 @@
+enum type {
+	TEXT,
+	INTEGER,
+	DECIMAL,
+	BYTE_ARRAY,
+	ENUM,
+	NFA
+	//GTV, // TODO
+	// TODO complex_type as GTV by typed and queryable
+	//FT3 // TODO
+}

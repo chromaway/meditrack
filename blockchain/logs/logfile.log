@@ -1,0 +1,127 @@
+DEBUG 2020-04-05 15:57:01.632 [main] SQLDatabaseAccess - chainId = 0 = BC RID null
+INFO  2020-04-05 15:57:01.635 [main] SQLDatabaseAccess - Blockchain RID: D3FF4F783B18A894979974A48105BAFF5BF87452B799E6A06CB7196F84333D3F doesn't exist in DB, so we add it.
+INFO  2020-04-05 15:57:01.637 [main] BaseConfigurationDataStore - Creating initial configuration for chain 0 with BC RID: D3FF4F783B18A894979974A48105BAFF5BF87452B799E6A06CB7196F84333D3F
+INFO  2020-04-05 15:57:02.019 [main] RestApi - Rest API listening on port 7740
+INFO  2020-04-05 15:57:02.019 [main] RestApi - Rest API attached on /
+INFO  2020-04-05 15:57:02.105 [main] BaseBlockchainProcessManager - [02:30]: Stopping of Blockchain: chainId: 0
+INFO  2020-04-05 15:57:02.105 [main] BaseBlockchainProcessManager - [02:30]: Blockchain has been stopped: chainId: 0
+INFO  2020-04-05 15:57:02.105 [main] BaseBlockchainProcessManager - [02:30]: Starting of Blockchain: chainId: 0
+WARN  2020-04-05 15:57:02.885 [main] RellPostchainModuleFactory - lib/nfa/core/entitee/queries.rell(10:27) Warning: Variable 'e' cannot be null at this location
+WARN  2020-04-05 15:57:02.886 [main] RellPostchainModuleFactory - lib/nfa/core/entitee/queries.rell(20:27) Warning: Variable 'e' cannot be null at this location
+WARN  2020-04-05 15:57:02.886 [main] RellPostchainModuleFactory - lib/nfa/core/property/operations.rell(49:17) Warning: Variable 'np' cannot be null at this location
+DEBUG 2020-04-05 15:57:02.927 [main] BaseBlockchainProcessManager - [02:30]: BlockchainConfiguration has been created: chainId: 0
+DEBUG 2020-04-05 15:57:02.960 [main] BaseBlockchainEngine - Initialize DB - begin
+DEBUG 2020-04-05 15:57:02.962 [main] GTXBlockchainConfiguration - Running initialize DB of class GTXBlockchainConfiguration
+DEBUG 2020-04-05 15:57:02.966 [main] CompositeGTXModule - Initialize DB for module: net.postchain.rell.module.RellPostchainModule@3fd05b3e
+INFO  2020-04-05 15:57:03.020 [main] SqlInit - Initializing database (chain_iid = 0)
+DEBUG 2020-04-05 15:57:03.453 [main] CompositeGTXModule - Initialize DB for module: net.postchain.gtx.StandardOpsGTXModule@2d2b6960
+DEBUG 2020-04-05 15:57:03.498 [main] BaseBlockchainEngine - Initialize DB - end
+DEBUG 2020-04-05 15:57:03.499 [main] BaseBlockchainProcessManager - [02:30]: BlockchainEngine has been created: chainId: 0
+DEBUG 2020-04-05 15:57:03.504 [main] DefaultXConnectionManager - [02:30]: Connecting chain: 0, blockchainRID: D3:3F
+DEBUG 2020-04-05 15:57:03.505 [main] DefaultXConnectionManager - [02:30]: Chain connected: 0
+DEBUG 2020-04-05 15:57:03.530 [main] BaseBlockchainProcessManager - [02:30]: BlockchainProcess has been launched: chainId: 0
+INFO  2020-04-05 15:57:03.535 [main] BaseBlockchainProcessManager - [02:30]: Blockchain has been started: chainId: 0
+DEBUG 2020-04-05 15:57:13.531 [updateLoop-02:30] ValidatorSyncManager - [02:30]: My node: 0, I'm primary,  block mngr: DNI, status mngr: BBI
+DEBUG 2020-04-05 15:57:13.532 [updateLoop-02:30] ValidatorSyncManager - [02:30]: node:0 he:0 ro:1 st:WaitBlock blockRID:null havesig:false
+DEBUG 2020-04-05 15:57:14.978 [qtp527721831-14] RestApi - Request body: {"type":"ft3.get_blockchain_info"}
+DEBUG 2020-04-05 15:57:15.013 [qtp527721831-15] RestApi - Request body : {"tx": "A581B63081B3A5693067A1220420D3FF4F783B18A894979974A48105BAFF5BF87452B799E6A06CB7196F84333D3FA5183016A5143012A20C0C0A6372656174655F6E6661A5023000A5273025A1230421024D7A49878382169871F2C7320B6C91EA97C9DE89316996DAE4D3BC5E7DCB9E67A5463044A142044001DC622340B615BBABA501637BFA4E81F895E042A47476DDE5966294B39520DA234126ADE5C7A301FD9158FF2D7F3BEF3BBF4E76C51739B89CC0007AB60D1CF9" } 
+DEBUG 2020-04-05 15:57:15.026 [qtp527721831-15] BaseTransactionQueue - Enqueued tx 80646593304F1472C0711785B168973FC2AFCBA12A7F3356C9EEBB0E95B86F5D
+DEBUG 2020-04-05 15:57:15.027 [qtp527721831-15] NetworkAwareTxQueue - Node broadcasting tx 80646593304F1472C0711785B168973FC2AFCBA12A7F3356C9EEBB0E95B86F5D
+DEBUG 2020-04-05 15:57:15.154 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Starting job buildBlock
+DEBUG 2020-04-05 15:57:15.169 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Checking transaction queue
+DEBUG 2020-04-05 15:57:15.169 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Appending transaction 80646593304F1472C0711785B168973FC2AFCBA12A7F3356C9EEBB0E95B86F5D
+DEBUG 2020-04-05 15:57:15.190 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Checking transaction queue
+INFO  2020-04-05 15:57:15.195 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Chain: D3:3F: Block is finalized: 40 ms, 46 net tps, 24 gross tps, height: 0, accepted txs: 1, rejected txs: 0, root-hash: C60AA832BBF582DC144ECCD3DEEDE25DAB897D3AF6E0DEA71F1459F233AC92B3, block-rid: CDB59325D7028B95021B4294F71406E8D381A3792E202BD9DD25C26749229CCF, prev-block-rid: D3FF4F783B18A894979974A48105BAFF5BF87452B799E6A06CB7196F84333D3F
+DEBUG 2020-04-05 15:57:15.207 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Finish job buildBlock
+DEBUG 2020-04-05 15:57:15.234 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Starting job commitBlock
+DEBUG 2020-04-05 15:57:15.237 [0-BaseBlockDatabaseWorker] BaseManagedBlockBuilder - -1 committing block - start -------------------
+DEBUG 2020-04-05 15:57:15.244 [0-BaseBlockDatabaseWorker] ManualBlockchainConfigurationProvider - lastHeight: 0, currentConfigHeight: 0, nextConfigHeight: 0
+DEBUG 2020-04-05 15:57:15.244 [0-BaseBlockDatabaseWorker] BaseManagedBlockBuilder - -1 committing block - end -------------------
+DEBUG 2020-04-05 15:57:15.244 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Finish job commitBlock
+DEBUG 2020-04-05 15:57:15.573 [qtp527721831-21] RestApi - Request body : {"tx": "A581EE3081EBA581A030819DA1220420D3FF4F783B18A894979974A48105BAFF5BF87452B799E6A06CB7196F84333D3FA54E304CA54A3048A2110C0F6372656174655F6C6F636174696F6EA5333031A2150C13426F72676F2050616E6967616C652028424F29A20B0C0934342E353032333237A20B0C0931312E333232353938A5273025A1230421024D7A49878382169871F2C7320B6C91EA97C9DE89316996DAE4D3BC5E7DCB9E67A5463044A14204400D1C5B66BC303D9127CA29B1A3E0BCD8AA7F7191AC33D3" } 
+DEBUG 2020-04-05 15:57:15.575 [qtp527721831-21] BaseTransactionQueue - Enqueued tx 3C26CF5A3421FD3AB6ACB6ED5B1FE3277E68E587900A93D92DF3156245FACC5B
+DEBUG 2020-04-05 15:57:15.575 [qtp527721831-21] NetworkAwareTxQueue - Node broadcasting tx 3C26CF5A3421FD3AB6ACB6ED5B1FE3277E68E587900A93D92DF3156245FACC5B
+DEBUG 2020-04-05 15:57:15.696 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Starting job buildBlock
+DEBUG 2020-04-05 15:57:15.699 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Checking transaction queue
+DEBUG 2020-04-05 15:57:15.700 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Appending transaction 3C26CF5A3421FD3AB6ACB6ED5B1FE3277E68E587900A93D92DF3156245FACC5B
+DEBUG 2020-04-05 15:57:15.704 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Checking transaction queue
+INFO  2020-04-05 15:57:15.706 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Chain: D3:3F: Block is finalized: 9 ms, 194 net tps, 100 gross tps, height: 1, accepted txs: 1, rejected txs: 0, root-hash: 02C233C456A5DFA1A606AFF1F6094FD622467FBD20ED10CAEBE81C720BE24865, block-rid: 268AD6D787124C37E58D0DE6ACA805C22CDD590296B389AD94EEDDC18F0FCCCA, prev-block-rid: CDB59325D7028B95021B4294F71406E8D381A3792E202BD9DD25C26749229CCF
+DEBUG 2020-04-05 15:57:15.708 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Finish job buildBlock
+DEBUG 2020-04-05 15:57:15.721 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Starting job commitBlock
+DEBUG 2020-04-05 15:57:15.721 [0-BaseBlockDatabaseWorker] BaseManagedBlockBuilder - -1 committing block - start -------------------
+DEBUG 2020-04-05 15:57:15.726 [0-BaseBlockDatabaseWorker] ManualBlockchainConfigurationProvider - lastHeight: 1, currentConfigHeight: 0, nextConfigHeight: 0
+DEBUG 2020-04-05 15:57:15.726 [0-BaseBlockDatabaseWorker] BaseManagedBlockBuilder - -1 committing block - end -------------------
+DEBUG 2020-04-05 15:57:15.726 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Finish job commitBlock
+DEBUG 2020-04-05 15:57:16.110 [qtp527721831-17] RestApi - Request body: {"name":"Borgo Panigale (BO)","type":"get_location"}
+DEBUG 2020-04-05 15:57:16.134 [qtp527721831-21] RestApi - Request body : {"tx": "A581F03081EDA581A230819FA1220420D3FF4F783B18A894979974A48105BAFF5BF87452B799E6A06CB7196F84333D3FA550304EA54C304AA2150C136372656174655F6F7267616E697A6174696F6EA531302FA20A0C084D616767696F7265A20A0C08484F53504954414CA2150C13426F72676F2050616E6967616C652028424F29A5273025A1230421024D7A49878382169871F2C7320B6C91EA97C9DE89316996DAE4D3BC5E7DCB9E67A5463044A14204409D6EE14349A5D5576D35EACDF2FF225C0D3C4B7103" } 
+DEBUG 2020-04-05 15:57:16.136 [qtp527721831-21] BaseTransactionQueue - Enqueued tx 3AFFF3C84938C64689BCED861737167CFA6EE80F1F5A3200A1792B3697DC44A4
+DEBUG 2020-04-05 15:57:16.136 [qtp527721831-21] NetworkAwareTxQueue - Node broadcasting tx 3AFFF3C84938C64689BCED861737167CFA6EE80F1F5A3200A1792B3697DC44A4
+DEBUG 2020-04-05 15:57:16.254 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Starting job buildBlock
+DEBUG 2020-04-05 15:57:16.260 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Checking transaction queue
+DEBUG 2020-04-05 15:57:16.260 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Appending transaction 3AFFF3C84938C64689BCED861737167CFA6EE80F1F5A3200A1792B3697DC44A4
+DEBUG 2020-04-05 15:57:16.265 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Checking transaction queue
+INFO  2020-04-05 15:57:16.266 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Chain: D3:3F: Block is finalized: 12 ms, 189 net tps, 81 gross tps, height: 2, accepted txs: 1, rejected txs: 0, root-hash: 7A53EE48DFCFD313AB70F4FCBA3C537805CDB3D31A56C80E94EFFFFF70F900E9, block-rid: 0E7668B0A561756E9828FC6805C8F84B54556986CF35AD92F0D1799D57B41680, prev-block-rid: 268AD6D787124C37E58D0DE6ACA805C22CDD590296B389AD94EEDDC18F0FCCCA
+DEBUG 2020-04-05 15:57:16.268 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Finish job buildBlock
+DEBUG 2020-04-05 15:57:16.274 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Starting job commitBlock
+DEBUG 2020-04-05 15:57:16.275 [0-BaseBlockDatabaseWorker] BaseManagedBlockBuilder - -1 committing block - start -------------------
+DEBUG 2020-04-05 15:57:16.279 [0-BaseBlockDatabaseWorker] ManualBlockchainConfigurationProvider - lastHeight: 2, currentConfigHeight: 0, nextConfigHeight: 0
+DEBUG 2020-04-05 15:57:16.279 [0-BaseBlockDatabaseWorker] BaseManagedBlockBuilder - -1 committing block - end -------------------
+DEBUG 2020-04-05 15:57:16.279 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Finish job commitBlock
+DEBUG 2020-04-05 15:57:16.665 [qtp527721831-16] RestApi - Request body: {"name":"Maggiore","type":"get_organization"}
+DEBUG 2020-04-05 15:57:16.684 [qtp527721831-21] RestApi - Request body : {"tx": "A58201803082017CA58201303082012CA1220420D3FF4F783B18A894979974A48105BAFF5BF87452B799E6A06CB7196F84333D3FA581DC3081D9A581D63081D3A21A0C186674332E6465765F72656769737465725F6163636F756E74A581B43081B1A581AE3081ABA2030C0153A5483046A2440C42303365383565626465646234396534323663366537386565626161303763316366316433616130613735623266393330333161626139653561333861386334353363A5563054A50C300AA2030C0141A2030C01" } 
+DEBUG 2020-04-05 15:57:16.686 [qtp527721831-21] BaseTransactionQueue - Enqueued tx 6C56E36FFBEB5EB86628D4A5643FE88856D3E0D39F5D1EE6F93A72DA2F538162
+DEBUG 2020-04-05 15:57:16.686 [qtp527721831-21] NetworkAwareTxQueue - Node broadcasting tx 6C56E36FFBEB5EB86628D4A5643FE88856D3E0D39F5D1EE6F93A72DA2F538162
+DEBUG 2020-04-05 15:57:16.822 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Starting job buildBlock
+DEBUG 2020-04-05 15:57:16.829 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Checking transaction queue
+DEBUG 2020-04-05 15:57:16.829 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Appending transaction 6C56E36FFBEB5EB86628D4A5643FE88856D3E0D39F5D1EE6F93A72DA2F538162
+DEBUG 2020-04-05 15:57:16.839 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Checking transaction queue
+INFO  2020-04-05 15:57:16.841 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Chain: D3:3F: Block is finalized: 18 ms, 92 net tps, 53 gross tps, height: 3, accepted txs: 1, rejected txs: 0, root-hash: 48E09870291D68B7FC0631696872613D94A41FDFC5B5D0C92166CDA11FF77F3E, block-rid: 3FBAFE8678286E8D14BE3F72A7B816326FAE81F3F9CCA4BCBA7136B126C50339, prev-block-rid: 0E7668B0A561756E9828FC6805C8F84B54556986CF35AD92F0D1799D57B41680
+DEBUG 2020-04-05 15:57:16.842 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Finish job buildBlock
+DEBUG 2020-04-05 15:57:16.869 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Starting job commitBlock
+DEBUG 2020-04-05 15:57:16.870 [0-BaseBlockDatabaseWorker] BaseManagedBlockBuilder - -1 committing block - start -------------------
+DEBUG 2020-04-05 15:57:16.875 [0-BaseBlockDatabaseWorker] ManualBlockchainConfigurationProvider - lastHeight: 3, currentConfigHeight: 0, nextConfigHeight: 0
+DEBUG 2020-04-05 15:57:16.875 [0-BaseBlockDatabaseWorker] BaseManagedBlockBuilder - -1 committing block - end -------------------
+DEBUG 2020-04-05 15:57:16.875 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Finish job commitBlock
+DEBUG 2020-04-05 15:57:17.216 [qtp527721831-16] RestApi - Request body: {"account_id":"87912657ce7d9d576d122f2fcdea490e095f80c6a4f63997b84224203b0a3dcc","type":"ft3.get_asset_balances"}
+DEBUG 2020-04-05 15:57:17.216 [qtp527721831-21] RestApi - Request body: {"id":"87912657ce7d9d576d122f2fcdea490e095f80c6a4f63997b84224203b0a3dcc","type":"ft3.get_account_auth_descriptors"}
+DEBUG 2020-04-05 15:57:17.216 [qtp527721831-35] RestApi - Request body: {"account_id":"87912657ce7d9d576d122f2fcdea490e095f80c6a4f63997b84224203b0a3dcc","type":"ft3.get_account_rate_limit_last_update"}
+DEBUG 2020-04-05 15:57:17.254 [qtp527721831-14] RestApi - Request body: {"account_id":"87912657ce7d9d576d122f2fcdea490e095f80c6a4f63997b84224203b0a3dcc","type":"ft3.get_account_rate_limit_last_update"}
+DEBUG 2020-04-05 15:57:17.273 [qtp527721831-35] RestApi - Request body: {"account_id":"87912657ce7d9d576d122f2fcdea490e095f80c6a4f63997b84224203b0a3dcc","type":"ft3.get_asset_balances"}
+DEBUG 2020-04-05 15:57:17.273 [qtp527721831-44] RestApi - Request body: {"id":"87912657ce7d9d576d122f2fcdea490e095f80c6a4f63997b84224203b0a3dcc","type":"ft3.get_account_auth_descriptors"}
+DEBUG 2020-04-05 15:57:17.274 [qtp527721831-15] RestApi - Request body: {"account_id":"87912657ce7d9d576d122f2fcdea490e095f80c6a4f63997b84224203b0a3dcc","type":"ft3.get_account_rate_limit_last_update"}
+DEBUG 2020-04-05 15:57:17.274 [qtp527721831-31] RestApi - Request body: {"id":"03e85ebdedb49e426c6e78eebaa07c1cf1d3aa0a75b2f93031aba9e5a38a8c453c","type":"ft3.get_accounts_by_participant_id"}
+DEBUG 2020-04-05 15:57:17.291 [qtp527721831-35] RestApi - Request body: {"id":"87912657ce7d9d576d122f2fcdea490e095f80c6a4f63997b84224203b0a3dcc","type":"ft3.get_account_by_id"}
+DEBUG 2020-04-05 15:57:17.303 [qtp527721831-44] RestApi - Request body: {"id":"87912657ce7d9d576d122f2fcdea490e095f80c6a4f63997b84224203b0a3dcc","type":"ft3.get_account_auth_descriptors"}
+DEBUG 2020-04-05 15:57:17.303 [qtp527721831-17] RestApi - Request body: {"account_id":"87912657ce7d9d576d122f2fcdea490e095f80c6a4f63997b84224203b0a3dcc","type":"ft3.get_asset_balances"}
+DEBUG 2020-04-05 15:57:17.303 [qtp527721831-21] RestApi - Request body: {"account_id":"87912657ce7d9d576d122f2fcdea490e095f80c6a4f63997b84224203b0a3dcc","type":"ft3.get_account_rate_limit_last_update"}
+DEBUG 2020-04-05 15:57:17.329 [qtp527721831-15] RestApi - Request body : {"tx": "A58201123082010EA581C33081C0A1220420D3FF4F783B18A894979974A48105BAFF5BF87452B799E6A06CB7196F84333D3FA571306FA56D306BA20A0C086164645F75736572A55D305BA2420C4038373931323635376365376439643537366431323266326663646561343930653039356638306336613466363339393762383432323432303362306133646363A2090C07446F63746F7231A20A0C084D616767696F7265A5273025A1230421024D7A49878382169871F2C7320B6C91EA97C9DE89316996DAE4D3" } 
+DEBUG 2020-04-05 15:57:17.330 [qtp527721831-15] BaseTransactionQueue - Enqueued tx B2C72A82D9E882F1E15AC0719C8C5736353F2F8CE60D7E02ED4E647CF0A8491C
+DEBUG 2020-04-05 15:57:17.331 [qtp527721831-15] NetworkAwareTxQueue - Node broadcasting tx B2C72A82D9E882F1E15AC0719C8C5736353F2F8CE60D7E02ED4E647CF0A8491C
+DEBUG 2020-04-05 15:57:17.453 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Starting job buildBlock
+DEBUG 2020-04-05 15:57:17.455 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Checking transaction queue
+DEBUG 2020-04-05 15:57:17.455 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Appending transaction B2C72A82D9E882F1E15AC0719C8C5736353F2F8CE60D7E02ED4E647CF0A8491C
+DEBUG 2020-04-05 15:57:17.459 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Checking transaction queue
+INFO  2020-04-05 15:57:17.460 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Chain: D3:3F: Block is finalized: 7 ms, 272 net tps, 135 gross tps, height: 4, accepted txs: 1, rejected txs: 0, root-hash: B98493F60558410C9487AE5C4FD8B22CAB982EE215231DE53AB50275F0291D24, block-rid: 14F143E244C713CC8E8FED03EF65B896C85FE7F0E8431839AB9612A4A8B343FD, prev-block-rid: 3FBAFE8678286E8D14BE3F72A7B816326FAE81F3F9CCA4BCBA7136B126C50339
+DEBUG 2020-04-05 15:57:17.462 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Finish job buildBlock
+DEBUG 2020-04-05 15:57:17.476 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Starting job commitBlock
+DEBUG 2020-04-05 15:57:17.477 [0-BaseBlockDatabaseWorker] BaseManagedBlockBuilder - -1 committing block - start -------------------
+DEBUG 2020-04-05 15:57:17.483 [0-BaseBlockDatabaseWorker] ManualBlockchainConfigurationProvider - lastHeight: 4, currentConfigHeight: 0, nextConfigHeight: 0
+DEBUG 2020-04-05 15:57:17.483 [0-BaseBlockDatabaseWorker] BaseManagedBlockBuilder - -1 committing block - end -------------------
+DEBUG 2020-04-05 15:57:17.483 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Finish job commitBlock
+DEBUG 2020-04-05 15:57:17.866 [qtp527721831-44] RestApi - Request body: {"account_id":"87912657ce7d9d576d122f2fcdea490e095f80c6a4f63997b84224203b0a3dcc","type":"get_account"}
+DEBUG 2020-04-05 15:57:17.911 [qtp527721831-14] RestApi - Request body : {"tx": "A58204EE308204EAA582049E3082049AA1220420D3FF4F783B18A894979974A48105BAFF5BF87452B799E6A06CB7196F84333D3FA582044930820445A581F13081EEA20E0C0C6372656174655F6173736574A581DB3081D8A2420C4038373931323635374345374439443537364431323246324643444541343930453039354638304336413446363339393742383432323432303342304133444343A2420C4038373931323635376365376439643537366431323266326663646561343930653039356638306336" } 
+DEBUG 2020-04-05 15:57:17.914 [qtp527721831-14] BaseTransactionQueue - Enqueued tx 8E70374A35D9FE3BC694E316DB3108E7D6A92D6DD5013421710AFD8D5A32D5A4
+DEBUG 2020-04-05 15:57:17.914 [qtp527721831-14] NetworkAwareTxQueue - Node broadcasting tx 8E70374A35D9FE3BC694E316DB3108E7D6A92D6DD5013421710AFD8D5A32D5A4
+DEBUG 2020-04-05 15:57:18.052 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Starting job buildBlock
+DEBUG 2020-04-05 15:57:18.057 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Checking transaction queue
+DEBUG 2020-04-05 15:57:18.057 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Appending transaction 8E70374A35D9FE3BC694E316DB3108E7D6A92D6DD5013421710AFD8D5A32D5A4
+DEBUG 2020-04-05 15:57:18.115 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Checking transaction queue
+INFO  2020-04-05 15:57:18.116 [0-BaseBlockDatabaseWorker] BaseBlockchainEngine - Chain: D3:3F: Block is finalized: 63 ms, 17 net tps, 15 gross tps, height: 5, accepted txs: 1, rejected txs: 0, root-hash: A979E7371A95E989C2890E634D2866DCE0856850929C6C8C401C35F784B1C12B, block-rid: E0F9E71657CCC28F112A991A59DB7310346768E7A8C687B6FCCC2EA54552415B, prev-block-rid: 14F143E244C713CC8E8FED03EF65B896C85FE7F0E8431839AB9612A4A8B343FD
+DEBUG 2020-04-05 15:57:18.117 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Finish job buildBlock
+DEBUG 2020-04-05 15:57:18.138 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Starting job commitBlock
+DEBUG 2020-04-05 15:57:18.139 [0-BaseBlockDatabaseWorker] BaseManagedBlockBuilder - -1 committing block - start -------------------
+DEBUG 2020-04-05 15:57:18.142 [0-BaseBlockDatabaseWorker] ManualBlockchainConfigurationProvider - lastHeight: 5, currentConfigHeight: 0, nextConfigHeight: 0
+DEBUG 2020-04-05 15:57:18.142 [0-BaseBlockDatabaseWorker] BaseManagedBlockBuilder - -1 committing block - end -------------------
+DEBUG 2020-04-05 15:57:18.142 [0-BaseBlockDatabaseWorker] BaseBlockDatabase - Finish job commitBlock
+DEBUG 2020-04-05 15:57:23.551 [updateLoop-02:30] ValidatorSyncManager - [02:30]: My node: 0, I'm primary,  block mngr: DNI, status mngr: BBI
+DEBUG 2020-04-05 15:57:23.552 [updateLoop-02:30] ValidatorSyncManager - [02:30]: node:0 he:6 ro:0 st:WaitBlock blockRID:null havesig:false

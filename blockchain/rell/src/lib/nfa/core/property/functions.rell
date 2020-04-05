@@ -1,0 +1,71 @@
+
+import e: ^.entitee;
+import t: ^.supported_types;
+
+function modifyProperty(e: e.entitee, property, gtvValue: gtv) {
+	require(property.is_mutable, "The component %s is not mutable".format(property.name));
+	val component = property.component;
+	when(component.type) {
+			t.type.INTEGER -> {
+				print('integer');
+				val propertyValue = t.sanitize_gtv_to_integer(gtvValue, component.extra);
+				t.ensureIntegerProperty(e, property, propertyValue);
+			};
+			t.type.DECIMAL -> {
+				print("DECIMAL");
+				val propertyValue = t.sanitize_gtv_to_decimal(gtvValue, component.extra);
+				t.ensureDecimalProperty(e, property, propertyValue);				
+			};
+			t.type.ENUM -> {
+				print("enum");
+				val propertyValue = t.sanitize_gtv_to_enum(gtvValue, component.extra);
+				t.ensureEnumProperty(e, property, propertyValue);
+			};
+			t.type.TEXT -> {
+				print("TEXT");
+				val propertyValue = text.from_gtv(gtvValue);
+				t.ensureTextProperty(e, property, propertyValue);							
+			};
+			t.type.BYTE_ARRAY -> {
+				print("byte");
+				val propertyValue = byte_array.from_gtv(gtvValue);
+				t.ensureBytesProperty(e, property, x"123123");				
+			};
+			t.type.NFA -> {
+				val propertyValue = t.sanitize_gtv_to_nfa(gtvValue, component.extra);
+				t.ensureNFAProperty(e, property, propertyValue);									
+			};
+		}
+}
+
+function removeProperty(e: e.entitee, property) {
+	require(not property.is_required, "The component % is required".format(property.name));
+	val component= property.component;
+	when(component.type) {
+		t.type.INTEGER -> {
+				delete integer_property@{e, property};
+		};
+		t.type.DECIMAL -> {
+				delete decimal_property@{e, property};
+		};
+		t.type.ENUM -> {
+				delete enum_property@{e, property};
+		};
+		t.type.TEXT -> {
+				delete text_property@{e, property};
+		};
+		t.type.BYTE_ARRAY -> {
+				delete bytes_property@{e, property};
+		};
+		t.type.NFA -> {
+				delete nfa_property@{.entitee == e, property};
+		};
+	}
+}
+
+
+function getPropertyValue(e: e.entitee, property_name: text): gtv {
+	val property = require_not_empty(property@?{e.nfa, .name == property_name}, 'The entity %s does not have the component %%x'.format(e.id).format(property_name));
+	val propertyValue = t.get_value_from_property(e, property);
+	return propertyValue;
+}
