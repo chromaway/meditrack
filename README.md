@@ -4,6 +4,10 @@ A project done for the Hack the Crisis hackathon 2020.
 
 Status is unfinished.
 
+* Blockchain works as a functional MVP
+* Frontend is a clickable MVP
+TODO: wire stuff together
+
 
 `src` and `public` directories are for the client. Implementation with
 react, bootstrap.
