@@ -69,8 +69,7 @@ class App extends Component {
                     <Container>
                         <Row>
                             <Col>
-                                <h1>Meditrack</h1>
-                                <p>
+                                <h2>Meditrack</h2>
                                     <Button
                                         tag="a"
                                         color="secondary"
@@ -80,8 +79,6 @@ class App extends Component {
                                     >
                                         Get started
                                     </Button>
-                </p>
-                
                             </Col>
                         </Row>
                     </Container>
