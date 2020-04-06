@@ -4,6 +4,17 @@ A project done for the Hack the Crisis hackathon 2020.
 
 Status is unfinished.
 
+# Screenshots
+
+## Organization Home Screen
+![home](./documentation/img/001.png)
+
+## Asset Info Screen
+
+![asset_screen](./documentation/img/002.png)
+
+# Project
+
 * Blockchain works as a functional MVP
 * Frontend is a clickable MVP
 TODO: wire stuff together
