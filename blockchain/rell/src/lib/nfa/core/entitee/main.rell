@@ -1,0 +1,25 @@
+//@mount('nfa')
+//module;
+
+import n: ^.nfa;
+
+entity entitee { // this is one type of asset (e.g. all the type of unique balls)
+	idx: integer;
+	key id: byte_array;
+	nfa: n.nfa;
+	
+	key idx, nfa;
+}
+
+
+struct entity_obj {
+	id: byte_array;
+	idx: integer; 
+	nfa_id: byte_array;
+	nfa_name: text;
+}
+
+struct entity_description {
+	entitee: entity_obj;
+	properties: map<text, gtv>;
+}

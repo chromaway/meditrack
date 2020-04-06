@@ -1,0 +1,9 @@
+import e: ^^.core.entitee;
+
+namespace ft3 {
+	import acc: ^^^.ft3.account;
+}
+
+entity ownership {
+	key e.entitee, account: ft3.acc.account;
+}

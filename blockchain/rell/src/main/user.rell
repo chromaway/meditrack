@@ -1,0 +1,32 @@
+import acc: lib.ft3.account; 
+import admin: .admin;
+
+
+
+entity user {
+	key account: acc.account;
+   	key username: text;
+   	organization;
+}
+
+operation add_user(account_id: byte_array, username: text, organization_name: name) {
+	admin.require_admin();
+	val account = acc.account@{.id == account_id};
+	
+	create user(account, username, organization@{organization_name});
+}
+ 
+ 
+function require_user(account_id: byte_array, auth_descriptor_id: byte_array): user {
+	val user = user@{.account== acc.account@{.id == account_id}};
+	acc.require_auth(user.account, auth_descriptor_id, list<text>());
+	return user;
+}
+
+query get_account(account_id: byte_array) {
+	return user@?{acc.account@{ .id == account_id }}(
+		account_id = .account.id,
+		username = .username,
+		organization = .organization 
+	);
+}

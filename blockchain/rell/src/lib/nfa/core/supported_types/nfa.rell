@@ -1,0 +1,39 @@
+/* **********************
+ *		NFA
+ * ********************** 
+ */
+ 
+import e: ^.entitee;
+import p: ^.property;
+import n: ^.nfa;
+
+struct extra_nfa_component_structure {
+	// This could create a circular problem
+	// TODO Fix this by recursively check nfa.id
+	// TODO maybe extra param in "extra" and ask for the version to select?
+	nfa_id: byte_array; // replace it with nfa? (not byte_array id)
+}
+
+function convert_to_nfa_extra(extra: gtv): extra_nfa_component_structure {
+	val extraNfa = extra_nfa_component_structure.from_gtv(extra);
+	val nfa = (n.nfa@{.id == extraNfa.nfa_id}(nfa_ref = nfa) limit 1).nfa_ref; 
+	return extra_nfa_component_structure(nfa.id);
+}
+
+function sanitize_gtv_to_nfa(gtvValue: gtv, componentStructureExtra: byte_array): e.entitee {
+	val extra = extra_nfa_component_structure.from_bytes(componentStructureExtra);
+	val entityToLink = byte_array.from_gtv(gtvValue);
+	// check if the entity actually belongs to the required type of nfa
+	val propertyValue = e.entitee@{.nfa.id == extra.nfa_id, .id == entityToLink};
+	require(propertyValue.nfa.id == extra.nfa_id);
+	return propertyValue;
+}
+
+function ensureNFAProperty(e: e.entitee, p: p.property, value: e.entitee) {
+	val isProperty = p.nfa_property@?{.entitee == e, p};
+	if(isProperty != null) {
+		update p.nfa_property@{.entitee == e, p}(.value = value);	
+	} else {
+		create p.nfa_property(entitee = e, p, value);
+	}
+}

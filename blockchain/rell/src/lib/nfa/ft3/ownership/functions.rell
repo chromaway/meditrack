@@ -1,0 +1,27 @@
+
+import e: ^^.core.entitee;
+
+
+function require_ownership(e: e.entitee, auth_descriptor_id: byte_array?) {
+	val ownership = ownership@?{e};
+ 	if (ownership != null) {
+ 		require_not_empty(auth_descriptor_id);
+		//ft3.acc.require_auth(ownership.account, auth_descriptor_id, ["N"]);
+		ft3.acc.require_auth(ownership.account, auth_descriptor_id, list<text>());
+ 	}
+}
+
+function setOwner(e: e.entitee, account: ft3.acc.account) {
+	require(ownership@?{e, account} == null);
+	create ownership(e, account);
+}
+
+function setOwnerByAccountId(e: e.entitee, account_id: byte_array) {
+	setOwner(e, ft3.acc.account @ { account_id });
+}
+
+function removeOwner(e: e.entitee, account: ft3.acc.account, auth_descriptor_id: byte_array) {
+	ft3.acc.require_auth(account, auth_descriptor_id, list<text>());
+	val ownership = require_not_empty(ownership@?{e, account});
+	delete ownership;	
+}

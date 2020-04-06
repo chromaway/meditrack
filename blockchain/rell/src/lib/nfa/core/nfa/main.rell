@@ -1,0 +1,11 @@
+//@mount('nfa')
+//module;
+
+entity nfa { // all the NFAs in the system are grouped here
+	name; // e.g. ball
+	key id: byte_array, 
+		//version: decimal; // Figure out something for versioning
+	desc: text;
+	index max_entities: integer;
+	//logic: decG; link custom client side logic in DeclarativeG 
+}

@@ -1,0 +1,34 @@
+
+import c: ^.component;
+import p: ^.property;
+import t: ^.supported_types;
+
+
+//query get_nfa(name, blockchain_rid: byte_array) {
+query get_nfa(id: byte_array) {
+	print("get_nfa id: ", id);
+	val n = require_not_empty(nfa @? { .id == id });
+	
+	val properties = p.property@* { n };
+	
+	val resComponents = list<c.component_iface>();
+	for (property in properties) {
+		resComponents.add(c.component_iface(
+			id = property.component.id,
+			name = property.name,
+			blockchain_rid = property.component.blockchain_rid,
+			type = property.component.type,
+			extra = t.type_extra_to_gtv_pretty(property.component.extra, property.component.type).to_gtv_pretty(),
+			readonly = not property.is_mutable,
+			required = property.is_required
+		));
+	}
+	
+	return (
+		id = n.id,
+		name = n.name,
+		desc = n.desc,
+		max_entities = n.max_entities,
+		components = resComponents
+	);
+}

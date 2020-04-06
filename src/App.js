@@ -24,12 +24,20 @@ class App extends Component {
 
         this.toggle = this.toggle.bind(this);
         this.state = {
+            helloOpen: true,
             isOpen: false,
             viewId: false
         };
+
+        this.onGetStartedClick=this.onGetStartedClick.bind(this);
         this.onViewClick=this.onViewClick.bind(this);
         this.onViewClose=this.onViewClose.bind(this);        
     }
+    onGetStartedClick(id) {
+        this.setState({helloOpen: false});
+    }
+    
+    
     toggle() {
         this.setState({
             isOpen: !this.state.isOpen
@@ -53,47 +61,48 @@ class App extends Component {
                     <Collapse isOpen={this.state.isOpen} navbar>
                         <Nav className="ml-auto" navbar>
                             <NavItem>
-                                <NavLink href="/components/">Requests</NavLink>
+                                <NavLink href="#">Requests</NavLink>
                             </NavItem>
                             <NavItem>
-                                <NavLink href="https://github.com/reactstrap/reactstrap">Admin</NavLink>
+                                <NavLink href="https://github.com/chromaway/meditrack">Admin</NavLink>
                             </NavItem>
                             <NavItem>
-                                <NavLink href="https://explorer.chromia.dev">Blockchain</NavLink>
+                                <NavLink href="https://explorer-testnet.chromia.com">Blockchain</NavLink>
                             </NavItem>
                 
                         </Nav>
                     </Collapse>
                 </Navbar>
+                {this.state.helloOpen? 
                 <Jumbotron>
                     <Container>
                         <Row>
                             <Col>
-                                <h1>Meditrack</h1>
-                                <p>
+                 <h2>Welcome to Meditrack</h2>
+                 <p>A tool for solidarity and effient allocation during an emergency.</p>
                                     <Button
-                                        tag="a"
+                                        tag="button"
                                         color="secondary"
                                         size="large"
-                                        href="http://reactstrap.github.io"
-                                        target="_blank"
+                                        onClick={this.onGetStartedClick}
                                     >
                                         Get started
                                     </Button>
-                </p>
-                
-                            </Col>
+                 </Col>
+                 
                         </Row>
                     </Container>
-                </Jumbotron>
-                {
-                    
+                 </Jumbotron>
+                 : <div></div>
                 }
+                
                 <Card>
                   <div className="card-body">
                     <h2 className="card-title">My requests</h2>
-                <ItemView id={this.state.viewId} isOpen={this.state.viewId} onClose={this.onViewClose}/>
-                <OrdersList onViewClick = {this.onViewClick}/>
+                    <ItemView id={this.state.viewId}
+                        isOpen={this.state.viewId}
+                        onClose={this.onViewClose}/>
+                    <OrdersList onViewClick = {this.onViewClick}/>
                   </div>
                 </Card>
             </div>
@@ -103,15 +112,3 @@ class App extends Component {
 
 export default App;
 
-
-                                // <p>
-                                //     <Button
-                                //         tag="a"
-                                //         color="info"
-                                //         size="large"
-                                //         href="http://reactstrap.github.io"
-                                //         target="_blank"
-                                //     >
-                                //         Other accent color
-                                //     </Button>
-                                // </p>

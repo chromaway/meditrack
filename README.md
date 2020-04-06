@@ -4,8 +4,17 @@ A project done for the Hack the Crisis hackathon 2020.
 
 Status is unfinished.
 
+* Blockchain works as a functional MVP
+* Frontend is a clickable MVP
+TODO: wire stuff together
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+
+`src` and `public` directories are for the client. Implementation with
+react, bootstrap.
+
+`blockchain` is for the blockchain implementation in
+[rell](https://rell.chromia.com), on [Chromia](https://chromia.com), a relational blockchain.
+
 
 In the project directory, you can run:
 

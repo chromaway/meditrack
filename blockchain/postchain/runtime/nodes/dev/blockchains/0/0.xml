@@ -1,0 +1,2424 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<dict>
+    <entry key="blockstrategy">
+        <dict>
+            <entry key="name">
+                <string>net.postchain.base.BaseBlockBuildingStrategy</string>
+            </entry>
+        </dict>
+    </entry>
+    <entry key="configurationfactory">
+        <string>net.postchain.gtx.GTXBlockchainConfigurationFactory</string>
+    </entry>
+    <entry key="gtx">
+        <dict>
+            <entry key="modules">
+                <array>
+                    <string>net.postchain.rell.module.RellPostchainModuleFactory</string>
+                    <string>net.postchain.gtx.StandardOpsGTXModule</string>
+                </array>
+            </entry>
+            <entry key="rell">
+                <dict>
+                    <entry key="moduleArgs">
+                        <dict>
+                            <entry key="lib.ft3.core">
+                                <dict>
+                                    <entry key="my_blockchain_description">
+                                        <string>YOUR_DAPP_DESCRIPTION</string>
+                                    </entry>
+                                    <entry key="my_blockchain_name">
+                                        <string>YOUR_DAPP_NAME</string>
+                                    </entry>
+                                    <entry key="my_blockchain_website">
+                                        <string>YOUR_DAPP_WEBSITE</string>
+                                    </entry>
+                                    <entry key="rate_limit_active">
+                                        <int>1</int>
+                                    </entry>
+                                    <entry key="rate_limit_max_points">
+                                        <int>10</int>
+                                    </entry>
+                                    <entry key="rate_limit_points_at_account_creation">
+                                        <int>1</int>
+                                    </entry>
+                                    <entry key="rate_limit_recovery_time">
+                                        <int>30000</int>
+                                    </entry>
+                                </dict>
+                            </entry>
+                        </dict>
+                    </entry>
+                    <entry key="modules">
+                        <array>
+                            <string>main</string>
+                        </array>
+                    </entry>
+                    <entry key="sources_v0.10">
+                        <dict>
+                            <entry key="lib/ft3/account/auth_basic.rell">
+                                <string>// Auth type:
+
+// "S" - single-sig
+// "M" - multi-sig
+
+struct single_sig_args {
+       flags: set&lt;text&gt;;
+       pubkey;
+}
+
+struct multi_sig_args {
+       flags: set&lt;text&gt;;
+       signatures_required: integer;
+       pubkeys: list&lt;pubkey&gt;;
+}
+
+function check_single_sig_auth(args: byte_array, participants: list&lt;byte_array&gt;, required_flags: list&lt;text&gt;): boolean {
+    require(participants.size() == 1);
+    val ss_args = single_sig_args.from_bytes(args);
+    return
+          ss_args.flags.contains_all(required_flags)
+            and
+          is_signer(participants[0]);
+}
+
+function check_multi_sig_auth(args: byte_array, participants: list&lt;byte_array&gt;, required_flags: list&lt;text&gt;): boolean {
+   val multi_sign_args = multi_sig_args.from_bytes(args);
+   if (not (multi_sign_args.flags.contains_all(required_flags))) return false;
+   var num_sign = multi_sign_args.signatures_required;
+   for(s in participants) {
+      if(is_signer(s)) {
+          num_sign -= 1;
+          if(num_sign &lt; 1) {return true;}
+      }
+   }
+   return false;
+}
+
+function check_auth_args (a_t: text, args: byte_array, participants: list&lt;byte_array&gt;, required_flags: list&lt;text&gt;): boolean {
+    return when (a_t) {
+        "S" -&gt; check_single_sig_auth(args, participants, required_flags);
+        "M" -&gt; check_multi_sig_auth(args, participants, required_flags);
+        else -&gt; false;
+    };
+}
+
+
+
+function require_auth (account, descriptor_id: byte_array, required_flags: list&lt;text&gt;) {
+   val account_auth_descriptor = account_auth_descriptor @ {
+     account,
+     .descriptor_id == descriptor_id
+   };
+	
+	require(is_valid(account_auth_descriptor));
+	
+   	require(
+		check_auth_args(
+       		account_auth_descriptor.auth_type,
+       		account_auth_descriptor.args,
+       		auth_descriptor_participant @* { account_auth_descriptor } ( .id ),
+       		required_flags
+		)
+   );
+   
+   update_auth_descriptor_rule_variables(account_auth_descriptor);
+   delete_expired_auth_descriptors(account);
+}
+</string>
+                            </entry>
+                            <entry key="lib/ft3/account/auth_descriptor_rule.rell">
+                                <string>
+enum rule_variable {
+	block_height,
+	block_time,
+	op_count
+}
+
+enum rule_operator {
+	lt,
+	le,
+	eq,
+	ge,
+	gt
+}
+
+struct rule_expression {
+	variable: text;
+	operator: text;
+	value: gtv;
+}
+
+entity auth_descriptor_rule_variable {
+	key account_auth_descriptor, name;
+	mutable value: byte_array;
+}
+
+function is_valid(auth_descriptor: account_auth_descriptor): boolean {
+	// check if rules is null (encoded null is equal to 0xa0020500)
+	if (auth_descriptor.rules == x'a0020500') {
+		return true;
+	}
+	
+	return is_rule_valid(
+		gtv.from_bytes(auth_descriptor.rules), 
+		load_variables(auth_descriptor)
+	);
+}
+
+function is_rule_valid(rule: gtv, variables: map&lt;text, gtv&gt;): boolean {
+	val parameters = list&lt;gtv&gt;.from_gtv(rule);
+	val operator = text.from_gtv(parameters[1]);
+	
+	if (operator == "and") {
+		return handle_composed_rule(rule, variables);
+	} else {
+		return handle_single_rule(rule, variables);
+	}
+}
+
+function handle_single_rule(rule: gtv, variables: map&lt;text, gtv&gt;): boolean {
+	return evaluate_int_variable_rule(
+		rule_expression.from_gtv(rule), 
+		variables
+	);	
+}
+
+ 
+function handle_composed_rule(rule: gtv, variables: map&lt;text, gtv&gt;): boolean {
+	val parameters = list&lt;gtv&gt;.from_gtv(rule);
+	val operator = text.from_gtv(parameters[1]);
+	if (operator == "and") {
+		return is_rule_valid(parameters[0], variables) and is_rule_valid(parameters[2], variables);
+	} else {
+		return false;
+	}
+}
+
+
+
+function is_active(account_auth_descriptor): boolean {
+	if (account_auth_descriptor.rules == x'a0020500') {
+		return true;
+	}
+	
+	return is_rule_active(gtv.from_bytes(account_auth_descriptor.rules), map&lt;text, gtv&gt;());
+}
+
+
+function is_rule_active(r: gtv, variables: map&lt;text, gtv&gt;): boolean {
+	val parameters = list&lt;gtv&gt;.from_gtv(r);
+	val operator = text.from_gtv(parameters[1]);
+	when (operator) {
+		"and" -&gt; {
+			return is_rule_active(parameters[0], variables) and is_rule_active(parameters[2], variables);
+		}
+		else -&gt; {
+			return is_simple_rule_active(r, variables);
+		}
+	}
+}
+
+function is_simple_rule_active(rule: gtv, variables: map&lt;text, gtv&gt;): boolean {
+	val parameters = list&lt;gtv&gt;.from_gtv(rule);
+	val variable_name = text.from_gtv(parameters[0]);
+	when (rule_variable.value(variable_name)) {
+		rule_variable.block_height -&gt; {
+			return is_block_height_rule_active(rule);
+		}
+		rule_variable.block_time -&gt; {
+			return is_block_time_rule_active(rule);
+		}		
+		rule_variable.op_count -&gt; {
+			return is_op_count_rule_active(rule);
+		}
+	}
+}
+
+/*
+ *  Variables
+ */
+
+function evaluate_int_variable_rule(rule: rule_expression, variables: map&lt;text, gtv&gt;): boolean {
+	val variable = rule_variable.value(rule.variable);
+	val operator = rule_operator.value(rule.operator);
+	val current_value = variable_value(variable, variables);
+	val defined_value = integer.from_gtv(rule.value);
+
+	when (operator) {
+		rule_operator.lt -&gt; {
+			return current_value &lt; defined_value;
+		}
+		rule_operator.le -&gt; {
+			return current_value &lt;= defined_value;
+		}
+		rule_operator.eq -&gt; {
+			return current_value == defined_value;
+		}
+		rule_operator.ge -&gt; {
+			return current_value &gt;= defined_value;
+		}
+		rule_operator.gt -&gt; {
+			return current_value &gt; defined_value;
+		}
+	}
+}
+
+
+/*
+ * Called from _add_auth_descriptor function
+ */
+function setup_auth_descriptor_variables(account_auth_descriptor) {
+	
+	if (account_auth_descriptor.rules == x'a0020500') {
+		return;
+	} 
+	
+	val variables = get_variable_names_set(gtv.from_bytes(account_auth_descriptor.rules));
+	
+	for (variable in variables) {
+		when (variable) {
+			rule_variable.op_count.name -&gt; {
+				create auth_descriptor_rule_variable(
+					account_auth_descriptor,
+					name = variable,
+					value = op_count_variable_initial_value().to_bytes()
+				);
+			}
+		}
+	}
+}
+ 
+function update_variables(account_auth_descriptor, variables: map&lt;text, gtv&gt;) {
+	for ((name, value) in variables) {
+		val variable = auth_descriptor_rule_variable @ { account_auth_descriptor, name };
+		val int_value = integer.from_gtv(value);
+		
+		when (name) {
+			rule_variable.op_count.name -&gt; {
+				variable.value = (int_value + 1).to_gtv().to_bytes();
+			}
+		}
+	}
+}
+ 
+function variable_value(variable: rule_variable, variables: map&lt;text, gtv&gt;): integer {
+	when (variable) {
+		rule_variable.block_height -&gt; {
+			return op_context.block_height;
+		}
+		rule_variable.block_time -&gt; {
+			return op_context.last_block_time;
+		}
+		rule_variable.op_count -&gt; {
+			return integer.from_gtv(variables[rule_variable.op_count.name]);
+		}
+	}
+}
+
+/*
+ * Analyze the rules before assigning them to an authenticator descriptor
+ */
+ function analyze_auth_descriptor_rules(rules: gtv, hop: integer) {
+ 	require(hop&lt;3, "too many rules");
+ 	val rules_bytes = rules.to_bytes(); 
+ 	if (rules_bytes == x'a0020500') {
+		return;
+	}
+	
+ 	val params = list&lt;gtv&gt;.from_gtv(rules);
+ 	require(params.size() &lt;=3);
+ 	
+ 	val operator = text.from_gtv(params[1]);
+ 	if(operator == "and") {
+ 		analyze_auth_descriptor_rules(params[0], hop+1); 
+ 		analyze_auth_descriptor_rules(params[2], hop+1);
+ 	} 	
+ 	
+	return;
+ }
+
+/*
+ * Returns set of variable names used in a rule
+ */
+function get_variable_names_set(rules: gtv): set&lt;text&gt; {
+	val parameters = list&lt;gtv&gt;.from_gtv(rules);
+	val operator = text.from_gtv(parameters[1]);
+	var vars = set&lt;text&gt;();
+	if (operator == "and") {
+		vars.add_all(get_variable_names_set(parameters[0]));
+		vars.add_all(get_variable_names_set(parameters[2]));
+	} else {
+		vars.add(text.from_gtv(parameters[0]));
+	}
+	return vars;
+} 
+
+function load_variables(account_auth_descriptor): map&lt;text, gtv&gt; {
+	val variables = auth_descriptor_rule_variable @* { account_auth_descriptor };
+	
+	val variables_map = map&lt;text, gtv&gt;();
+	for (variable in variables) {
+		variables_map[variable.name] = gtv.from_bytes(variable.value);
+	}
+	
+	return variables_map;
+}
+
+function update_auth_descriptor_rule_variables(account_auth_descriptor) {
+	val variables = load_variables(account_auth_descriptor);
+	update_variables(account_auth_descriptor, variables);
+}
+
+/*
+ * auth descriptor cleanup
+ */
+
+function delete_expired_auth_descriptors(account) {
+	val auth_descriptors = account_auth_descriptor @* { account };
+	
+	for (auth_descriptor in auth_descriptors) {
+		if (not (is_active(auth_descriptor) and is_valid(auth_descriptor))) {
+			_delete_auth_descriptor(auth_descriptor);
+		}
+	}
+}
+
+/****************************************************************************************
+ *                                     block_time                                       *
+ ****************************************************************************************/
+
+function is_block_time_rule_active(r: gtv): boolean {
+	val parameters = list&lt;gtv&gt;.from_gtv(r);
+	val operator = rule_operator.value(text.from_gtv(parameters[1]));
+	val value = integer.from_gtv(parameters[2]);
+	when (operator) {
+		rule_operator.gt -&gt; {
+			return op_context.last_block_time &gt; value;
+		}
+		rule_operator.ge,
+		rule_operator.eq -&gt; {
+			return op_context.last_block_time &gt;= value;
+		}
+		else -&gt; {
+			return true;
+		}
+	}
+}
+
+
+/****************************************************************************************
+ *                                  block_height                                        *
+ ****************************************************************************************/
+
+function is_block_height_rule_active(r: gtv): boolean {
+	val parameters = list&lt;gtv&gt;.from_gtv(r);
+	val operator = rule_operator.value(text.from_gtv(parameters[1]));
+	val value = integer.from_gtv(parameters[2]);
+	when (operator) {
+		rule_operator.gt -&gt; {
+			return op_context.block_height &gt; value;
+		}
+		rule_operator.ge,
+		rule_operator.eq -&gt; {
+			return op_context.block_height &gt;= value;
+		}
+		else -&gt; {
+			return true;
+		}
+	}
+}
+
+
+/****************************************************************************************
+ *                                     op_count                                         *
+ ****************************************************************************************/
+ 
+ function op_count_variable_initial_value(): gtv {
+ 	return (1).to_gtv();
+ }
+ 
+ function is_op_count_rule_active(rule: gtv): boolean {
+ 	return true;
+ }</string>
+                            </entry>
+                            <entry key="lib/ft3/account/module.rell">
+                                <string>@mount('ft3')
+module;
+
+import core: ^.core;
+
+struct auth_descriptor {
+    auth_type: text;
+    participants: list&lt;byte_array&gt;;
+    args: list&lt;gtv&gt;;
+    rules: gtv;
+}
+
+entity account {
+    key id: byte_array;
+}
+
+entity account_meta {
+    meta_key: text;
+    value: byte_array;
+    index account, meta_key;
+    index meta_key, value;
+}
+
+entity account_auth_descriptor {
+     descriptor_id: byte_array;
+     key account, descriptor_id;
+     index descriptor_id;
+     auth_type: text;
+     args: byte_array;
+     rules: byte_array;
+}
+
+entity auth_descriptor_participant {
+    key account_auth_descriptor, id: byte_array;
+}
+
+
+// rate limiter
+entity rl_state {
+    key account;
+    mutable points: integer;
+    mutable last_update: timestamp;
+    mutable max_points: integer;
+    mutable recovery_time: timestamp;
+}
+
+function _add_auth_descriptor (account, auth_descriptor) {
+     val descriptor_id = auth_descriptor.hash();
+     
+     analyze_auth_descriptor_rules(auth_descriptor.rules, 0);
+     
+     val account_auth_descriptor = create account_auth_descriptor (
+        account, descriptor_id,
+        auth_descriptor.auth_type,
+        args = auth_descriptor.args.to_gtv().to_bytes(),
+        rules = auth_descriptor.rules.to_gtv().to_bytes()
+     );
+     
+     for (participant in auth_descriptor.participants) {
+        create auth_descriptor_participant(account_auth_descriptor, id = participant);
+     }
+     
+     setup_auth_descriptor_variables(account_auth_descriptor);
+}
+
+function _delete_auth_descriptor(auth_descriptor: account_auth_descriptor) {
+	delete auth_descriptor_rule_variable @* { auth_descriptor };
+	delete auth_descriptor_participant @* { auth_descriptor };
+	delete auth_descriptor;
+}
+
+function _delete_all_auth_descriptors_exclude(account, auth_descriptor_id: byte_array) {
+	delete (adrv: auth_descriptor_rule_variable, ad: account_auth_descriptor) @* {
+		ad.account == account, ad.descriptor_id != auth_descriptor_id, adrv.account_auth_descriptor == ad		
+	};
+	
+	delete (adp: auth_descriptor_participant, ad: account_auth_descriptor) @* {
+        ad.account == account and ad.descriptor_id != auth_descriptor_id and adp.account_auth_descriptor == ad
+    };
+
+    delete account_auth_descriptor @* {
+       .account == account,
+       .descriptor_id != auth_descriptor_id
+    };
+}
+
+function create_account_with_auth (auth_descriptor): byte_array {
+     val id = auth_descriptor.hash();
+     val acc = create account (id);
+     _add_auth_descriptor(
+        acc, auth_descriptor
+     );
+     val max_points = core.my_blockchain_info.rate_limit_max_points;
+     val recovery_time = core.my_blockchain_info.rate_limit_recovery_time;
+     val points_at_start = core.my_blockchain_info.rate_limit_points_at_account_creation;
+     
+	create rl_state(acc, .points = points_at_start, .last_update = op_context.last_block_time, max_points, recovery_time);
+    
+    return id;
+}
+
+function auth_and_log(account_id: byte_array, auth_descriptor_id: byte_array, required_flags: list&lt;text&gt;): account {
+	val account = account @ { .id == account_id };
+	rate_limit(account);
+	require_auth(account, auth_descriptor_id, required_flags);
+	return account;
+}
+
+
+query get_account_auth_descriptors(id: byte_array) {
+    return account_auth_descriptor @* {
+        .account.id == id
+    } (
+        id = .descriptor_id,
+        type = .auth_type,
+        args = .args
+    );
+}
+
+query get_account_by_id(id: byte_array) {
+    return account @? { id } ( .id );
+}
+
+query get_account_by_auth_descriptor(auth_descriptor) {
+    return account @? { .id == auth_descriptor.hash() } ( .id );
+}
+
+query get_accounts_by_participant_id(id: byte_array) {
+    return auth_descriptor_participant @* { id } ( .account_auth_descriptor.account.id );
+}
+
+query get_accounts_by_auth_descriptor_id(descriptor_id: byte_array) {
+    return account_auth_descriptor @* { descriptor_id } ( .account.id );
+}
+</string>
+                            </entry>
+                            <entry key="lib/ft3/account/operations/module.rell">
+                                <string>@mount('ft3')
+module;
+
+import acc: ^^.account;
+import core: ^^.core;
+
+
+operation delete_auth_descriptor (account_id: byte_array, auth_descriptor_id: byte_array, delete_descriptor_id: byte_array) {
+      val account = acc.auth_and_log(account_id, auth_descriptor_id, ["A"]);
+
+      acc._delete_auth_descriptor(acc.account_auth_descriptor @ {
+         .account == account,
+         .descriptor_id == delete_descriptor_id
+      });
+}
+
+operation delete_all_auth_descriptors_exclude(account_id: byte_array, auth_descriptor_id: byte_array) {
+    val account = acc.auth_and_log(account_id, auth_descriptor_id, ["A"]);
+
+	acc._delete_all_auth_descriptors_exclude(account, auth_descriptor_id);
+}
+
+operation add_auth_descriptor (account_id: byte_array, auth_id: byte_array, new_desc: acc.auth_descriptor) {
+      val account = acc.auth_and_log(account_id, auth_id, ["A"]);
+      acc._add_auth_descriptor(account, new_desc);
+}
+</string>
+                            </entry>
+                            <entry key="lib/ft3/account/rate_limit.rell">
+                                <string>import ^.core;
+
+
+function rate_limit (account) {
+	if(core.my_blockchain_info.rate_limit_active == false ) return;
+    val max_counter = core.my_blockchain_info.rate_limit_max_points;
+    val recovery_time = core.my_blockchain_info.rate_limit_recovery_time;
+    val stat = rl_state@{account} (.points, .last_update);
+    val delta = op_context.last_block_time - stat.last_update;
+    var got_points = 0;
+    var update_time = stat.last_update;
+
+    if (delta &gt; recovery_time)
+    {
+        got_points = delta / recovery_time;
+        update_time = stat.last_update + got_points * recovery_time;
+        if (got_points + stat.points &gt; max_counter) {
+            got_points = max_counter - stat.points;
+            // if user is at maximum reset his 
+            // timer
+            update_time = op_context.last_block_time;
+        }
+    }
+    
+    require(stat.points + got_points &gt; 0);
+    
+    update rl_state@{account} (
+        .points += got_points - 1,
+        .last_update = update_time
+    );
+}
+
+
+query get_account_rate_limit_last_update(account_id: byte_array) {
+	if(core.my_blockchain_info.rate_limit_active == false ) return (points = 0, last_update = 0);
+	val t= rl_state@{.account.id == account_id}
+	(
+		.points, 
+		.last_update
+	);
+	
+	return t;
+}
+
+query get_last_timestamp(): integer {
+	return (block@{.timestamp&gt;0}(@sort_desc .timestamp) limit 1);
+}</string>
+                            </entry>
+                            <entry key="lib/ft3/core/asset.rell">
+                                <string>import acc: ^.account;
+
+entity asset {
+    id: byte_array;
+    key id;
+    name;
+    issuing_chain_rid: byte_array;
+}
+
+entity balance {
+    key acc.account, asset;
+    mutable amount: integer = 0;
+}
+
+function ensure_balance(acc.account, asset): balance {
+    val balance = balance @? {asset, account};
+    if (balance != null) {
+       return balance;
+    }
+    else return create balance(account, asset, amount = 0);
+}
+
+function register_asset (name, issuing_chain_rid: byte_array): asset {
+   val id = (name, issuing_chain_rid).hash();
+   return create asset (id, name, issuing_chain_rid);
+}
+
+function _get_asset_balances(account_id: byte_array): list&lt;(id:byte_array,name:text,amount:integer,chain_id:byte_array)&gt; {
+    return balance @* { .account.id == account_id } (
+      id = .asset.id,
+      name = .asset.name,
+      amount = .amount,
+      chain_id = .asset.issuing_chain_rid
+    );
+}
+
+query get_asset_balances(account_id: byte_array) {
+    return _get_asset_balances(account_id);
+}
+
+query get_asset_balance(account_id: byte_array, asset_id: byte_array) {
+    return balance @? {
+        .account.id == account_id,
+        .asset.id == asset_id
+    } (
+        id = .asset.id,
+        name = .asset.name,
+        amount = .amount,
+        chain_id = .asset.issuing_chain_rid
+    );
+}
+
+query get_asset_by_name(name) {
+    return asset @* { name } (
+        .id,
+        .name,
+        .issuing_chain_rid
+    );
+    
+}
+
+query get_asset_by_id(asset_id: byte_array) {
+	return asset@{
+		.id == asset_id
+	}(
+		id = .id,
+		name = .name,
+		issuing_chain_rid = .issuing_chain_rid
+		
+	);
+}
+
+query get_all_assets() {
+	return asset@*{}(
+		id = .id,
+		name = .name,
+		issuing_chain_rid = .issuing_chain_rid	
+	);
+}</string>
+                            </entry>
+                            <entry key="lib/ft3/core/dev_op.rell">
+                                <string>module;
+
+import ft3: ^^.core;
+import acc: ^^.account;
+
+object dev_state {
+   mutable allow_dev_ops: boolean = true;
+}
+
+function require_dev() {
+    require(dev_state.allow_dev_ops);
+}
+
+function dev_give_points_(account: acc.account, amount: integer) {
+	require_dev();
+	update acc.rl_state@{account}(.points += amount);
+}</string>
+                            </entry>
+                            <entry key="lib/ft3/core/history.rell">
+                                <string>import acc: ^.account;
+
+@log entity payment_history_entry {
+    index acc.account, asset;
+    delta: integer;
+
+    // helps to locate exact position of payment entry in transaction
+    op_index: integer;
+    is_input: boolean;
+    entry_index: integer;
+}
+
+query get_payment_history(account_id: byte_array, after_block: integer) {
+    return payment_history_entry @* {
+        acc.account @ { account_id },
+        .transaction.block.block_height &gt; after_block
+    } (
+        delta = .delta,
+        asset = .asset.name,
+        asset_id = .asset.id,
+        is_input = .is_input,
+        timestamp = .transaction.block.timestamp,
+        block_height = .transaction.block.block_height,
+        entry_index = .entry_index,
+        tx_rid = .transaction.tx_rid,
+        tx_data = .transaction.tx_data
+    );
+}
+</string>
+                            </entry>
+                            <entry key="lib/ft3/core/module.rell">
+                                <string>@mount('ft3')
+module;
+
+struct module_args {
+	my_blockchain_name: text;
+	my_blockchain_website: text;
+	my_blockchain_description: text;
+	rate_limit_active: boolean;
+	rate_limit_max_points: integer;
+    rate_limit_recovery_time: integer;
+    rate_limit_points_at_account_creation: integer;    
+}</string>
+                            </entry>
+                            <entry key="lib/ft3/core/my_blockchain_info.rell">
+                                <string>
+object my_blockchain_info {
+    mutable name: text = chain_context.args.my_blockchain_name;
+    mutable website: text = chain_context.args.my_blockchain_website;
+    mutable description: text = chain_context.args.my_blockchain_description;
+    mutable rate_limit_active: boolean = chain_context.args.rate_limit_active;
+    mutable rate_limit_max_points: integer = chain_context.args.rate_limit_max_points;
+    mutable rate_limit_recovery_time: integer = chain_context.args.rate_limit_recovery_time;
+    mutable rate_limit_points_at_account_creation: integer = chain_context.args.rate_limit_points_at_account_creation;
+}
+
+
+//operation update_blockchain(name, website: text, description: text) {
+//    blockchain.name = name;
+//    blockchain.website = website;
+//    blockchain.description = description;
+//}
+
+query get_blockchain_info() {
+    return (
+        name = my_blockchain_info.name,
+        website = my_blockchain_info.website,
+        description = my_blockchain_info.description,
+        rate_limit_active = my_blockchain_info.rate_limit_active,
+        rate_limit_max_points = my_blockchain_info.rate_limit_max_points,
+        rate_limit_recovery_time = my_blockchain_info.rate_limit_recovery_time,
+        rate_limit_points_at_account_creation = chain_context.args.rate_limit_points_at_account_creation
+    );
+}
+
+</string>
+                            </entry>
+                            <entry key="lib/ft3/core/operations/transfer.rell">
+                                <string>@mount('ft3')
+module;
+
+import ft3: ^^;
+
+
+operation transfer (inputs: list&lt;ft3.xfer_input&gt;, outputs: list&lt;ft3.xfer_output&gt;) {
+    ft3._transfer(inputs, outputs);
+}</string>
+                            </entry>
+                            <entry key="lib/ft3/core/transfer.rell">
+                                <string>import acc: ^.account;
+
+struct xfer_input {
+   account_id: byte_array;
+   asset_id: byte_array;
+   auth_descriptor_id: byte_array;
+   amount: integer;
+   extra: map&lt;text, gtv&gt;;
+}
+
+struct xfer_output {
+   account_id: byte_array;
+   asset_id: byte_array;
+   amount: integer;
+   extra: map&lt;text, gtv&gt;;
+}
+
+function deduct_balance (acc.account, asset, d_amount: integer) {
+    val b = balance @ { account, asset };
+    require( b.amount &gt;= d_amount, "Balance is too low");
+    update b (amount -= d_amount);
+}
+
+function consume_input (i: xfer_input, idx: integer, assets: map&lt;asset, integer&gt;): payment_history_entry {
+      val asset = asset @ { .id == i.asset_id };
+      val account = acc.auth_and_log(i.account_id, i.auth_descriptor_id, ["T"]);
+      require( i.amount &gt; 0, "Amount should be non 0 positive." );
+
+      deduct_balance(account, asset, i.amount);
+      assets[asset] = i.amount + if (asset in assets) assets[asset] else 0;
+      return create payment_history_entry (
+        account,
+        asset,
+        .delta = i.amount,
+        .op_index = 500, //op_context ???
+        .is_input = true,
+        .entry_index = idx
+      );
+}
+
+function process_transfer_output (o: xfer_output, idx: integer, available_assets: map&lt;asset, integer&gt;): payment_history_entry {
+      if (o.extra.contains("reg_auth_desc")) {
+          val auth_desc = acc.auth_descriptor.from_gtv(o.extra["reg_auth_desc"]);
+          require(o.account_id
+           == acc.create_account_with_auth(auth_desc));
+      }
+
+      val target_account = acc.account @ { .id == o.account_id };
+      val asset = asset @ { .id == o.asset_id };
+      require(o.amount &gt; 0, "You cannot tx output negative numbers");
+      require( available_assets[asset] &gt;= o.amount );
+      available_assets[asset] -= o.amount;
+      require(available_assets[asset] &gt;= 0);
+      val balance = ensure_balance(target_account, asset);
+      balance.amount += o.amount;
+
+      return create payment_history_entry (
+        .account = target_account,
+        asset,
+        .delta = o.amount,
+
+        .op_index = 500, // something from op_context,
+        .is_input = false,
+        .entry_index = idx
+      );
+}
+
+function _transfer (inputs: list&lt;xfer_input&gt;, outputs: list&lt;xfer_output&gt;) {
+   val sum_inputs = map&lt;asset, integer&gt;();
+   var idx = 0;
+   for (i in inputs) {
+      consume_input(i, idx, sum_inputs);
+      idx += 1;
+   }
+
+   idx = 0;
+   for (o in outputs) {
+      process_transfer_output(o, idx, sum_inputs);
+      idx += 1;
+   }
+}
+</string>
+                            </entry>
+                            <entry key="lib/ft3/crosschain/blockchain.rell">
+                                <string>import ft3: ^.core;
+import acc: ^.account;
+
+
+entity asset_origin {
+    key ft3.asset;
+    origin_chain_rid: byte_array;
+}
+
+entity linked_chain {
+    key chain_rid: byte_array;
+}
+
+function blockchain_account_id (blockchain_rid: byte_array): byte_array {
+   return ("B", blockchain_rid).hash();
+}
+
+function ensure_blockchain_account (blockchain_rid: byte_array): acc.account {
+   val blockchain_account_id = blockchain_account_id(blockchain_rid);
+   val acc = acc.account @? { .id == blockchain_account_id };
+   return if (acc??)  acc
+   else create acc.account (id = blockchain_account_id);
+}
+
+function get_blockchain_account (blockchain_rid: byte_array): acc.account {
+   return acc.account @ { .id == blockchain_account_id(blockchain_rid) };
+}
+
+
+query get_linked_chains() {
+    return linked_chain @* {} ( .chain_rid );
+}
+
+query is_linked_with_chain(chain_rid: byte_array) {
+    return linked_chain @? { chain_rid } != null;
+}
+</string>
+                            </entry>
+                            <entry key="lib/ft3/crosschain/module.rell">
+                                <string>@mount('ft3.xc')
+module;
+</string>
+                            </entry>
+                            <entry key="lib/ft3/crosschain/structures.rell">
+                                <string>struct operation_rec {
+   name;
+   args: list&lt;gtv&gt;;
+}
+
+struct transaction_body_rec {
+    blockchain_rid: byte_array;
+    operations: list&lt;operation_rec&gt;;
+    signers: list&lt;gtv&gt;;
+}
+
+struct transaction_rec {
+   body: transaction_body_rec;
+   signatures: list&lt;gtv&gt;;
+}
+
+struct transaction_proof {
+     tx: virtual&lt;transaction_rec&gt;;
+     // block_header: byte_array;
+     // merkle_path: virtual&lt;list&lt;byte_array&gt;&gt;;
+     // tx_index: integer;
+     block_rid: byte_array;
+     block_signers: list&lt;byte_array&gt;;
+     signatures: list&lt;byte_array&gt;;     
+}
+
+function verify_transaction_proof( p: transaction_proof ) {
+   // TODO
+}</string>
+                            </entry>
+                            <entry key="lib/ft3/crosschain/transfer.rell">
+                                <string>import ft3: ^.core;
+
+struct xc_target {
+    account_id: byte_array;
+    extra: map&lt;text, gtv&gt;;
+}
+
+function add_to_blockchain_balance (blockchain_rid: byte_array, ft3.asset, amount: integer) {
+    require( chain_context.blockchain_rid != blockchain_rid ); // cannot add to own account
+
+    val origin_chain_rid = asset_origin @? { asset } .origin_chain_rid;
+
+    if (exists(origin_chain_rid) and (blockchain_rid == origin_chain_rid)) {
+       // do nothing. in future we might track origin
+    } else {
+         val bc_acc = ensure_blockchain_account(blockchain_rid);
+         ft3.ensure_balance(bc_acc, asset).amount += amount;
+    }
+}
+
+
+struct init_xfer_args {
+          source: ft3.xfer_input;
+          target: xc_target;
+          hops: list&lt;byte_array&gt;;
+}
+
+entity applied_transfers { key tx_rid: byte_array; }
+
+
+</string>
+                            </entry>
+                            <entry key="lib/ft3/ft3_basic.rell">
+                                <string>module;
+
+namespace ft3 {
+	import acc: lib.ft3.account;
+	import acc_op: lib.ft3.account.operations;
+	import transfer_op: lib.ft3.core.operations.transfer;
+}
+
+</string>
+                            </entry>
+                            <entry key="lib/ft3/ft3_basic_dev.rell">
+                                <string>module;
+
+namespace ft3 {
+	import acc: lib.ft3.account;
+	import acc_op: lib.ft3.account.operations;
+	import core: lib.ft3.ft3_basic_dev;
+	import transfer_op: lib.ft3.core.operations.transfer;
+//	import lib.ft3.crosschain;
+//	import lib.ft3.crosschain.operations;
+	
+	import lib.ft3.operations.dev_op_account;
+	import lib.ft3.operations.dev_op_asset;
+	import lib.ft3.operations.dev_op_balance;
+	import lib.ft3.operations.dev_op_rate_limit;
+}
+
+</string>
+                            </entry>
+                            <entry key="lib/ft3/operations/dev_op_account.rell">
+                                <string>@mount('ft3')
+module;
+
+import dev_op: ^^.core.dev_op;
+import acc: ^^.account; 
+
+
+operation dev_register_account (acc.auth_descriptor) {
+    dev_op.require_dev();
+    acc.create_account_with_auth( auth_descriptor );
+}
+</string>
+                            </entry>
+                            <entry key="lib/ft3/operations/dev_op_asset.rell">
+                                <string>@mount('ft3')
+module;
+
+import dev_op: ^^.core.dev_op;
+import ft3: ^^.core;
+
+import xft3: ^^.crosschain; 
+
+operation dev_register_asset (name, issuing_chain_rid: byte_array) {
+    dev_op.require_dev();
+    ft3.register_asset(name, issuing_chain_rid);
+}
+
+operation dev_register_xc_asset (name, issuing_chain_rid: byte_array, origin_chain_rid: byte_array) {
+    dev_op.require_dev();   
+    val asset = ft3.register_asset(name, issuing_chain_rid);
+    create xft3.asset_origin (asset, origin_chain_rid);
+}
+</string>
+                            </entry>
+                            <entry key="lib/ft3/operations/dev_op_balance.rell">
+                                <string>@mount('ft3')
+module;
+
+import dev_op: ^^.core.dev_op;
+import ft3: ^^.core;
+import acc: ^^.account;
+
+
+operation dev_give_balance (asset_id: byte_array, account_id: byte_array, amount: integer) {
+    dev_op.require_dev();
+    require(amount &gt;= 0);
+    ft3.ensure_balance( acc.account @ { account_id }, ft3.asset @ { .id == asset_id } ).amount += amount;
+}</string>
+                            </entry>
+                            <entry key="lib/ft3/operations/dev_op_rate_limit.rell">
+                                <string>@mount('ft3')
+module;
+
+import dev_op: ^^.core.dev_op;
+import acc: ^^.account;
+
+
+
+/*
+ * Can be negative
+ */
+operation dev_give_points(account_id: byte_array, amount: integer){
+	val account = acc.account@{.id == account_id};
+	dev_op.dev_give_points_(account, amount);
+}
+
+operation dev_free_op(account_id: byte_array) {
+	// this operation does not cost points in the rate limit
+	val account = acc.account@{.id == account_id};
+	dev_op.dev_give_points_(account, 1);
+	acc.rate_limit(account);
+}</string>
+                            </entry>
+                            <entry key="lib/nfa/core/component/functions.rell">
+                                <string>
+import p: ^.property;
+import t: ^.supported_types;
+
+function component_structure_name(name: text, type: t.type): text {
+	when (type) {
+		t.type.INTEGER -&gt; {
+			return "integer"; 
+		}
+		t.type.ENUM -&gt; {
+			return name.lower_case(); 
+		}
+		t.type.TEXT -&gt; {
+			return "text";
+		}
+		t.type.DECIMAL -&gt; {
+			return "decimal";
+		}
+		t.type.BYTE_ARRAY -&gt; {
+			return "byte_array";
+		}
+		t.type.NFA -&gt; {
+			return name.lower_case();
+		}
+	}
+}
+
+// TODO: this is create property
+function createComponent(name: text, type: t.type, extra: gtv?): component {
+	
+	val extra_serialized = t.serialize_extra(type, extra ?: list&lt;gtv&gt;().to_gtv());
+	
+	// all names are lower case to provide consistency use of snake-case is suggested
+	val nameLow = name.lower_case(); 
+	val newComponent = create component (
+		.name = nameLow,
+		.blockchain_rid = chain_context.blockchain_rid,
+		.id = (nameLow, extra_serialized, chain_context.blockchain_rid).hash(),
+		type,
+		.extra = extra_serialized
+	);
+	
+	return newComponent;
+}
+
+function ensureComponent(component_name: text, component_bc_rid: byte_array, component_type: t.type, extra: gtv): component {
+	val cs_name = component_structure_name(component_name, component_type);
+	val serialized_extra = t.serialize_extra(component_type, extra);
+
+	val isComponentStructure = component@?{
+		//.id == (component_name.lower_case(), component_bc_rid).hash()
+		.id == (component_name.lower_case(), serialized_extra, chain_context.blockchain_rid).hash()
+	};
+	return isComponentStructure?: createComponent(component_name, component_type, extra);
+}</string>
+                            </entry>
+                            <entry key="lib/nfa/core/component/main.rell">
+                                <string>//@mount('nfa')
+//module;
+
+import t: ^.supported_types;
+
+entity component {
+	key id: byte_array; // TODO: with blockchain_rid, id is now technically not required 
+	blockchain_rid: byte_array;
+	name;
+	type: t.type;
+	extra: byte_array;
+}
+
+
+struct component_req {
+	is_required: boolean = false;
+	is_mutable: boolean = true;
+}
+
+struct component_def {
+	component;
+	component_req;
+}
+
+struct component_iface {
+	id: byte_array;
+	name;
+	blockchain_rid: byte_array; 
+	type: t.type;
+	readonly: boolean;
+	required: boolean;
+	extra: gtv;
+}</string>
+                            </entry>
+                            <entry key="lib/nfa/core/component/operations.rell">
+                                <string>
+import c: ^.component;
+
+operation create_component_structure(new_c: c.component_iface) {
+	c.createComponent(new_c.name, new_c.type, new_c.extra);
+}</string>
+                            </entry>
+                            <entry key="lib/nfa/core/component/queries.rell">
+                                <string></string>
+                            </entry>
+                            <entry key="lib/nfa/core/entitee/functions.rell">
+                                <string>
+import own: ^^.ft3.ownership;
+import n: ^.nfa;
+import p: ^.property;
+import t: ^.supported_types; 
+
+function createEntitee(nfa: n.nfa, id: byte_array, entity_components: map&lt;text, gtv&gt;): entitee {
+	val entityIdx = (entitee@*{nfa}).size();
+	print(entityIdx);
+	require(entityIdx &lt; nfa.max_entities, "Maximum amount of nfa entities already created");
+	val newEntity = create entitee(nfa, entityIdx, id);
+	
+	val requiredComponents = p.property@*{nfa, .is_required == true}.component;
+	
+	for((componentName, gtvValue) in entity_components) {
+		val property = require_not_empty(p.property@?{nfa, .name == componentName});
+		val component = property.component;
+		// check that the required components are in here.
+		if(property.is_required){
+			requiredComponents.remove(component);			
+		}
+		
+		when(component.type) {
+			t.type.INTEGER -&gt; {
+				print("integer");
+				val propertyValue = t.sanitize_gtv_to_integer(gtvValue, component.extra);
+				create p.integer_property(newEntity, property, propertyValue);
+			};
+			t.type.DECIMAL -&gt; {
+				print("decimal");
+				val propertyValue = t.sanitize_gtv_to_decimal(gtvValue, component.extra);
+				create p.decimal_property(newEntity, property, propertyValue);
+			};
+			t.type.ENUM -&gt; {
+				print("enum");
+				val propertyValue = t.sanitize_gtv_to_enum(gtvValue, component.extra);
+				create p.enum_property(newEntity, property, propertyValue);
+			};
+			t.type.TEXT -&gt; {
+				print("text");
+				val propertyValue = text.from_gtv(gtvValue);
+				create p.text_property(newEntity, property, propertyValue);
+			};
+			t.type.BYTE_ARRAY -&gt; {
+				print("byte_array");
+				val propertyValue = byte_array.from_gtv(gtvValue);
+				create p.bytes_property(newEntity, property, propertyValue);	
+			};
+			t.type.NFA -&gt; {
+				print("nfa");
+				val propertyValue = t.sanitize_gtv_to_nfa(gtvValue, component.extra);
+				create p.nfa_property(.entitee = newEntity, property, .value = propertyValue);
+			};
+		}
+	}
+	
+	require(requiredComponents.size() == 0, "Not all the required components had been passed");
+	return newEntity;
+}
+ 
+ 
+ function modifyEntitee(auth_descriptor_id: byte_array?, entitee, entity_properties: map&lt;name, gtv?&gt;) {
+ 	
+ 	own.require_ownership(entitee, auth_descriptor_id);
+	
+	for ((propertyName, gtvValue) in entity_properties) {
+		val property = p.property@{entitee.nfa, .name == propertyName};
+		if(gtvValue != null) {
+			p.modifyProperty(entitee, property, gtvValue);
+		} else {
+			p.removeProperty(entitee, property);
+		}
+	}
+}
+
+
+function getEntitee(e: entitee): entity_description {
+	val properties = p.property@*{e.nfa};
+	val propertiesResult = map&lt;text, gtv&gt;();
+	val ics = p.integer_property @* { e };
+	val ecs = p.enum_property @* { e };
+	val tcs = p.text_property @* { e };
+	val dcs = p.decimal_property @* { e };
+	val bcs = p.bytes_property @* { e };
+	val ncs = p.nfa_property @* { .entitee == e };
+	
+	for (ic in ics) {
+		propertiesResult[ic.property.name] = ic.value.to_gtv();
+	}
+	
+	for (ec in ecs)  {
+		propertiesResult[ec.property.name] = ec.value.to_gtv();
+	}
+	
+	for (tc in tcs) {
+		propertiesResult[tc.property.name] = tc.value.to_gtv();
+	}
+	
+	for (dc in dcs) {
+		propertiesResult[dc.property.name] = dc.value.to_gtv();
+	}
+	
+	for (bc in bcs) {
+		propertiesResult[bc.property.name] = bc.value.to_gtv();
+	}
+	
+	for (nc in ncs) {
+		propertiesResult[nc.property.name] =  nc.value.id.to_gtv();
+	}
+	
+	return entity_description(
+		entity_obj(
+			id = e.id,
+			idx = e.idx,
+			nfa_id = e.nfa.id,
+			nfa_name = e.nfa.name
+		),
+		propertiesResult
+	);
+}
+
+</string>
+                            </entry>
+                            <entry key="lib/nfa/core/entitee/main.rell">
+                                <string>//@mount('nfa')
+//module;
+
+import n: ^.nfa;
+
+entity entitee { // this is one type of asset (e.g. all the type of unique balls)
+	idx: integer;
+	key id: byte_array;
+	nfa: n.nfa;
+	
+	key idx, nfa;
+}
+
+
+struct entity_obj {
+	id: byte_array;
+	idx: integer; 
+	nfa_id: byte_array;
+	nfa_name: text;
+}
+
+struct entity_description {
+	entitee: entity_obj;
+	properties: map&lt;text, gtv&gt;;
+}</string>
+                            </entry>
+                            <entry key="lib/nfa/core/entitee/operations.rell">
+                                <string>
+import n: ^.nfa;
+import p: ^.property;
+import own: ^^.ft3.ownership;
+import acc: ^^^.ft3.account;
+
+operation create_entity(
+	nfa_name: text, 
+	new_id: byte_array, 
+	properties: list&lt;p.property_value&gt;,
+	account_id: byte_array, 
+	auth_descriptor_id: byte_array
+) {
+	acc.require_auth(acc.account @ { account_id }, auth_descriptor_id, list&lt;text&gt;());
+	print("nfa name: ", nfa_name);
+	val id = (nfa_name.lower_case(), chain_context.blockchain_rid).hash();
+	print("id: ", id);
+	val n = n.nfa @ { .id == id };
+	
+	val m = map&lt;text, gtv&gt;();
+	
+	for (property in properties) {
+		m.put(property.name, property.value);
+	}
+	
+	print("create entity");
+	
+	val entitee = createEntitee(n, new_id, m);
+	
+	// should we check if signer is owner of the account?
+	own.setOwnerByAccountId(entitee, account_id);
+}
+</string>
+                            </entry>
+                            <entry key="lib/nfa/core/entitee/queries.rell">
+                                <string>
+
+
+query get_entity(entity_id: byte_array, components_to_retrieve: list&lt;text&gt;) {
+	val e = entitee @? {.id == entity_id};
+	
+	if (e == null) {
+		return null;
+	} else {
+		return getEntitee(e!!);	
+	}
+}
+
+query get_entity_by_id_and_nfa_name(entity_id: byte_array, nfa_name: text, components_to_retrieve: list&lt;text&gt;) {
+	val e = entitee @? {.id == entity_id, .nfa.id == (nfa_name.lower_case(), chain_context.blockchain_rid).hash()};
+	
+	if (e == null) {
+		return null;
+	} else {
+		return getEntitee(e!!);	
+	}
+}</string>
+                            </entry>
+                            <entry key="lib/nfa/core/module.rell">
+                                <string>@mount('nfa')
+module;
+
+import .component;
+import .entitee;
+import .nfa;
+import .property;
+
+namespace ft3 {
+	import ^^.ft3.ft3_basic;
+	import ^^.ft3.account;
+}</string>
+                            </entry>
+                            <entry key="lib/nfa/core/nfa/functions.rell">
+                                <string>
+import p: ^.property;
+import c: ^.component;
+
+function createNFA(name, desc: text, max_entities: integer,components: map&lt;name, c.component_def&gt;): nfa {
+	val nfa = createNFAClass(name, desc, max_entities);
+	
+	for((propertyName, componentDef) in components) {
+//		val componentStructure = ensureComponentStructure(componentDef.component_structure);
+		val component = c.component@{.id == componentDef.component.id};
+		val is_required = componentDef.component_req.is_required;
+		val is_mutable = componentDef.component_req.is_mutable;
+				
+		create p.property(nfa, component, propertyName, is_required, is_mutable);
+	}
+	
+	return nfa;
+}
+
+function easyCreateNFA(name, desc: text, max_entities: integer, components: map&lt;name, (byte_array, boolean, boolean)&gt;): nfa {
+	val nfa = createNFAClass(name, desc, max_entities);
+	
+	for((propertyName, (componentId, is_required, is_mutable)) in components) {
+		val component = c.component@{.id == componentId};
+		create p.property(nfa, component, propertyName, is_required, is_mutable);
+	}
+	return nfa;
+}
+
+function createNFAClass(name, desc: text, max_entities: integer): nfa {
+	
+	val id = (name.lower_case(), chain_context.blockchain_rid).hash();
+	
+	return create nfa(
+		.name = name.lower_case(),
+		id,
+		desc,
+		max_entities
+//		.version = 0.00
+	);
+}</string>
+                            </entry>
+                            <entry key="lib/nfa/core/nfa/main.rell">
+                                <string>//@mount('nfa')
+//module;
+
+entity nfa { // all the NFAs in the system are grouped here
+	name; // e.g. ball
+	key id: byte_array, 
+		//version: decimal; // Figure out something for versioning
+	desc: text;
+	index max_entities: integer;
+	//logic: decG; link custom client side logic in DeclarativeG 
+}</string>
+                            </entry>
+                            <entry key="lib/nfa/core/nfa/operations.rell">
+                                <string>
+import c: ^.component;
+import e: ^.entitee;
+import n: ^.nfa;
+import t: ^.supported_types;
+
+
+// TODO wrong on many layers, we shouldn't create component_structure out of nothing
+operation easy_create_nfa(
+	name, desc: text, 
+	max_entities: integer, 
+	propertiesI: list&lt;c.component_iface&gt;, 
+	account_id: byte_array, 
+	auth_descriptor_id: byte_array
+) {
+	
+	// TODO Move this computation on client side
+	val components_structure = map&lt;name, c.component_def&gt;();
+	for(prop in propertiesI) {	
+		print("PROP", prop);
+		val componentStructure = c.ensureComponent(prop.name, prop.blockchain_rid, prop.type, prop.extra);
+		components_structure.put(prop.name, c.component_def(
+			componentStructure,
+			c.component_req(
+				is_required = prop.required,
+				is_mutable = not prop.readonly
+			)
+		));
+	}
+	n.createNFA(name, desc, max_entities, components_structure);
+}
+
+
+operation register_nfa(name, desc: text, max_entities: integer, properties: map&lt;name, c.component_def&gt;) {
+	n.createNFA(name, desc, max_entities, properties);
+}
+</string>
+                            </entry>
+                            <entry key="lib/nfa/core/nfa/queries.rell">
+                                <string>
+import c: ^.component;
+import p: ^.property;
+import t: ^.supported_types;
+
+
+//query get_nfa(name, blockchain_rid: byte_array) {
+query get_nfa(id: byte_array) {
+	print("get_nfa id: ", id);
+	val n = require_not_empty(nfa @? { .id == id });
+	
+	val properties = p.property@* { n };
+	
+	val resComponents = list&lt;c.component_iface&gt;();
+	for (property in properties) {
+		resComponents.add(c.component_iface(
+			id = property.component.id,
+			name = property.name,
+			blockchain_rid = property.component.blockchain_rid,
+			type = property.component.type,
+			extra = t.type_extra_to_gtv_pretty(property.component.extra, property.component.type).to_gtv_pretty(),
+			readonly = not property.is_mutable,
+			required = property.is_required
+		));
+	}
+	
+	return (
+		id = n.id,
+		name = n.name,
+		desc = n.desc,
+		max_entities = n.max_entities,
+		components = resComponents
+	);
+}</string>
+                            </entry>
+                            <entry key="lib/nfa/core/property/functions.rell">
+                                <string>
+import e: ^.entitee;
+import t: ^.supported_types;
+
+function modifyProperty(e: e.entitee, property, gtvValue: gtv) {
+	require(property.is_mutable, "The component %s is not mutable".format(property.name));
+	val component = property.component;
+	when(component.type) {
+			t.type.INTEGER -&gt; {
+				print('integer');
+				val propertyValue = t.sanitize_gtv_to_integer(gtvValue, component.extra);
+				t.ensureIntegerProperty(e, property, propertyValue);
+			};
+			t.type.DECIMAL -&gt; {
+				print("DECIMAL");
+				val propertyValue = t.sanitize_gtv_to_decimal(gtvValue, component.extra);
+				t.ensureDecimalProperty(e, property, propertyValue);				
+			};
+			t.type.ENUM -&gt; {
+				print("enum");
+				val propertyValue = t.sanitize_gtv_to_enum(gtvValue, component.extra);
+				t.ensureEnumProperty(e, property, propertyValue);
+			};
+			t.type.TEXT -&gt; {
+				print("TEXT");
+				val propertyValue = text.from_gtv(gtvValue);
+				t.ensureTextProperty(e, property, propertyValue);							
+			};
+			t.type.BYTE_ARRAY -&gt; {
+				print("byte");
+				val propertyValue = byte_array.from_gtv(gtvValue);
+				t.ensureBytesProperty(e, property, x"123123");				
+			};
+			t.type.NFA -&gt; {
+				val propertyValue = t.sanitize_gtv_to_nfa(gtvValue, component.extra);
+				t.ensureNFAProperty(e, property, propertyValue);									
+			};
+		}
+}
+
+function removeProperty(e: e.entitee, property) {
+	require(not property.is_required, "The component % is required".format(property.name));
+	val component= property.component;
+	when(component.type) {
+		t.type.INTEGER -&gt; {
+				delete integer_property@{e, property};
+		};
+		t.type.DECIMAL -&gt; {
+				delete decimal_property@{e, property};
+		};
+		t.type.ENUM -&gt; {
+				delete enum_property@{e, property};
+		};
+		t.type.TEXT -&gt; {
+				delete text_property@{e, property};
+		};
+		t.type.BYTE_ARRAY -&gt; {
+				delete bytes_property@{e, property};
+		};
+		t.type.NFA -&gt; {
+				delete nfa_property@{.entitee == e, property};
+		};
+	}
+}
+
+
+function getPropertyValue(e: e.entitee, property_name: text): gtv {
+	val property = require_not_empty(property@?{e.nfa, .name == property_name}, 'The entity %s does not have the component %%x'.format(e.id).format(property_name));
+	val propertyValue = t.get_value_from_property(e, property);
+	return propertyValue;
+}</string>
+                            </entry>
+                            <entry key="lib/nfa/core/property/main.rell">
+                                <string>//@mount('nfa')
+//module;
+
+import c: ^.component;
+import e: ^.entitee;
+import n: ^.nfa;
+
+entity property { // e.g. color
+	nfa: n.nfa; // keep this?
+	c.component;
+	name;
+	is_required: boolean;  // is this component compulsory in the nfa?
+	is_mutable: boolean;
+	key name, nfa;
+}
+
+entity bytes_property {
+	key e.entitee, property;
+	mutable value: byte_array;
+}
+
+
+entity decimal_property {
+	key e.entitee, property;
+	mutable value: decimal;
+}
+
+
+entity enum_property {
+	key e.entitee, property;
+	mutable value: text;
+}
+
+
+entity integer_property {
+	key e.entitee, property;
+	mutable value: integer;
+}
+
+entity nfa_property {
+	key e.entitee, property;
+	mutable value: e.entitee;
+}
+
+entity text_property {
+	key e.entitee, property;	
+	mutable value: text;
+}
+
+
+struct property_value {
+	name;
+	value: gtv;
+}</string>
+                            </entry>
+                            <entry key="lib/nfa/core/property/operations.rell">
+                                <string>
+import c: ^.component;
+import e: ^.entitee;
+import p: ^.property;
+import t: ^.supported_types;
+
+import own: ^^.ft3.ownership;
+
+operation update_property(
+	entity_id: byte_array, 
+	property_name: text, 
+	value: gtv,
+	account_id: byte_array, 
+	auth_descriptor_id: byte_array
+) {
+	val e = e.entitee @ { entity_id };
+	
+	own.require_ownership(e, auth_descriptor_id);
+	
+	val id = (e.nfa.name, property_name, chain_context.blockchain_rid).hash();
+	
+	val prop = property @ { e.nfa, property_name };
+	val comp = prop.component;
+	
+	require(prop.is_mutable, 'Property is not mutable');
+	
+	when (comp.type) {
+		t.type.INTEGER -&gt; {
+			update p.integer_property @ { prop, e } ( value = integer.from_gtv(value) ); 
+		}
+		t.type.ENUM -&gt; {
+			update p.enum_property @ { prop, e } ( value = text.from_gtv(value) ); 
+		}
+		t.type.TEXT -&gt; {
+			update p.text_property @ { prop, e } ( value = text.from_gtv(value) );
+		}
+		t.type.DECIMAL -&gt; {
+			update p.decimal_property @ { prop, e } ( value = decimal.from_gtv(value) );
+		}
+		t.type.BYTE_ARRAY -&gt; {
+			update p.bytes_property @ { prop, e } ( value = byte_array.from_gtv(value) );
+		}
+		t.type.NFA -&gt; {
+			val np = p.nfa_property @? { prop, .entitee == e };
+			if (np == null) {
+				val propertyValue = t.sanitize_gtv_to_nfa(value, comp.extra);
+				create p.nfa_property(.entitee = e, prop, .value = propertyValue);
+			} else {
+				np!!.value = t.sanitize_gtv_to_nfa(value, comp.extra);
+			}
+		}
+	}
+}
+
+/*
+ * Deletes property on an nfa entity (not nfa itself).
+ */
+operation delete_property(
+	entity_id: byte_array, 
+	property_name: text,
+	account_id: byte_array, 
+	auth_descriptor_id: byte_array
+) {
+	val e = e.entitee @ { entity_id };
+		
+	own.require_ownership(e, auth_descriptor_id);
+	
+	val prop = property @ { e.nfa, property_name };
+	val comp = prop.component;
+	
+	require(prop.is_mutable and prop.is_required == false, 'Property is not mutable');
+	
+	when (comp.type) {
+		t.type.INTEGER -&gt; {
+			delete p.integer_property @? { prop, e }; 
+		}
+		t.type.ENUM -&gt; {
+			delete p.enum_property @? { prop, e }; 
+		}
+		t.type.TEXT -&gt; {
+			delete p.text_property @? { prop, e };
+		}
+		t.type.DECIMAL -&gt; {
+			delete p.decimal_property @? { prop, e };
+		}
+		t.type.BYTE_ARRAY -&gt; {
+			delete p.bytes_property @? { prop, e };
+		}
+		t.type.NFA -&gt; {
+			delete p.nfa_property @? { prop, .entitee == e };
+		}
+	}
+}</string>
+                            </entry>
+                            <entry key="lib/nfa/core/property/queries.rell">
+                                <string>import e: ^.entitee;
+
+query get_property_value(entity_id: byte_array, property_name: text) {
+	val e = e.entitee@{.id == entity_id};
+	return getPropertyValue(e, property_name);
+}
+</string>
+                            </entry>
+                            <entry key="lib/nfa/core/supported_types/bytes.rell">
+                                <string>
+import e: ^.entitee;
+import p: ^.property;
+
+function ensureBytesProperty(e: e.entitee, p: p.property, value: byte_array) {
+	val isProperty = p.bytes_property@?{e, p};
+	
+	if(isProperty != null) {
+		update p.bytes_property@{e, p}(.value = value);	
+	} else {
+		create p.bytes_property(e, p, value);
+	}	
+}</string>
+                            </entry>
+                            <entry key="lib/nfa/core/supported_types/common.rell">
+                                <string>
+import e: ^.entitee;
+import p: ^.property;
+
+function get_value_from_property(e: e.entitee, p: p.property): gtv {
+	val component = p.component;
+	
+	val cv: gtv;
+	when(component.type) {
+			type.INTEGER -&gt; {
+				cv = (p.integer_property@{e, p}.value).to_gtv();
+			};
+			type.DECIMAL -&gt; {
+				cv = (p.decimal_property@{e, p}.value).to_gtv();
+			};
+			type.ENUM -&gt; {
+				cv = (p.enum_property@{e, p}.value).to_gtv(); 
+			};
+			type.TEXT -&gt; {
+				cv = (p.text_property@{e, p}.value).to_gtv();
+			};
+			type.BYTE_ARRAY -&gt; {
+				cv = (p.bytes_property@{e, p}.value).to_gtv();
+			};
+			type.NFA -&gt; {
+				cv = (p.nfa_property@{.entitee == e, p}.value.id).to_gtv();
+			};
+		}
+		return cv;
+}
+
+function type_extra_to_gtv_pretty(serialized_extra: byte_array, component_type: type): gtv {
+	when(component_type) {
+ 		type.INTEGER -&gt; {
+			return extra_integer_component_structure.from_bytes(serialized_extra).to_gtv_pretty();
+ 		};
+ 		type.DECIMAL -&gt; {
+
+			return extra_decimal_component_structure.from_bytes(serialized_extra).to_gtv_pretty();
+ 		};
+ 		type.ENUM -&gt; {
+
+			return extra_enum_component_structure.from_bytes(serialized_extra).to_gtv_pretty();
+ 		};
+ 		type.NFA -&gt; {
+			return extra_nfa_component_structure.from_bytes(serialized_extra).to_gtv_pretty();
+ 		};
+ 		else -&gt; {
+			return list&lt;gtv&gt;().to_gtv_pretty();			
+ 		};
+ 	}
+}
+
+function serialize_extra(component_type: type, extra: gtv): byte_array {
+ 	when(component_type) {
+ 		type.INTEGER -&gt; {
+			return convert_to_integer_extra(extra).to_bytes();
+ 		};
+ 		type.DECIMAL -&gt; {
+
+			return convert_to_decimal_extra(extra).to_bytes();
+ 		};
+ 		type.ENUM -&gt; {
+
+			return convert_to_enum_extra(extra).to_bytes();
+ 		};
+ 		type.NFA -&gt; {
+
+			return convert_to_nfa_extra(extra).to_bytes();
+ 		};
+ 		else -&gt; {
+			return x"";		
+ 		};
+ 	}
+}</string>
+                            </entry>
+                            <entry key="lib/nfa/core/supported_types/decimal.rell">
+                                <string>/* **********************
+ *		DECIMAL
+ * ********************** 
+ */
+ 
+ 
+import e: ^.entitee;
+import p: ^.property;
+
+struct extra_decimal_component_structure {
+	min_val: integer; // minimum value allowed (e.g. negative numbers not allowed) 
+	max_val: integer; // max value allowed or byte_lenght
+	decimals: integer; // how many decimals?
+}
+
+function convert_to_decimal_extra(extra: gtv): extra_decimal_component_structure {
+	val extraDecimal = extra_decimal_component_structure.from_gtv(extra);
+	require(extraDecimal.min_val &lt; extraDecimal.max_val, "Min value must be smaller than max value");
+	require(extraDecimal.decimals &gt;= 0, "Can't have negative number of decimals");
+	return extraDecimal;
+}
+
+function sanitize_gtv_to_decimal(gtvValue: gtv, componentExtra: byte_array): decimal {
+	val propertyValue = decimal.from_gtv(gtvValue);
+	val extra = extra_decimal_component_structure.from_bytes(componentExtra);
+	require(propertyValue &gt;= extra.min_val, "Value &lt;%x&gt; can't be smaller than &lt;%x&gt;".format(propertyValue).format(extra.min_val));
+	require(propertyValue &lt;= extra.max_val, "Value &lt;%x&gt; can't be greater than &lt;%x&gt;".format(propertyValue).format(extra.min_val));
+	return propertyValue.round(extra.decimals);
+}
+
+function ensureDecimalProperty(e: e.entitee, p: p.property, value: decimal) {
+	val isProperty = p.decimal_property@?{e, p};
+	
+	if(isProperty != null) {
+		update p.decimal_property@{e, p}(.value = value);	
+	} else {
+		create p.decimal_property(e, p, value);
+	}	
+} </string>
+                            </entry>
+                            <entry key="lib/nfa/core/supported_types/enum.rell">
+                                <string>/* **********************
+ *		ENUM
+ * ********************** 
+ */
+ 
+ 
+import e: ^.entitee;
+import p: ^.property;
+
+struct extra_enum_component_structure {
+	// this class is only used with enum types, assume enum are all text for now (but maybe forever)
+	enums: list&lt;text&gt;;
+}
+
+function convert_to_enum_extra(extra: gtv):extra_enum_component_structure {
+	// TODO, this could be optimized
+	val extraEnum = extra_enum_component_structure.from_gtv(extra);
+	val allowed_values = extraEnum.enums;
+	require(allowed_values.size() &lt; 256, "You can create maximum 256 enum items");
+	val enums = set&lt;text&gt;();
+	for (allowed_value in allowed_values) {
+		enums.add(allowed_value.lower_case()); 
+	}
+	extraEnum.enums.clear();
+	extraEnum.enums.add_all(enums.sorted());
+	
+	return extraEnum;
+}
+
+function sanitize_gtv_to_enum(gtvValue: gtv, componentStructureExtra: byte_array): text {
+	val componentValue = text.from_gtv(gtvValue);
+	val extra = extra_enum_component_structure.from_bytes(componentStructureExtra);
+	return componentValue;
+}
+
+function ensureEnumProperty(e: e.entitee, p: p.property, value: text) {
+	val isProperty = p.enum_property@?{e, p};
+	if(isProperty != null) {
+		update p.enum_property@{e, p}(.value = value);	
+	} else {
+		create p.enum_property(e, p, value);
+	}
+}</string>
+                            </entry>
+                            <entry key="lib/nfa/core/supported_types/integer.rell">
+                                <string>/* **********************
+ *		INTEGER
+ * ********************** 
+ */
+ 
+import e: ^.entitee;
+import p: ^.property;
+ 
+struct extra_integer_component_structure {
+	min_val: integer; // minimum value allowed (e.g. negative numbers not allowed) 
+	max_val: integer; // max value allowed or byte_lenght
+}
+
+function convert_to_integer_extra(extra: gtv): extra_integer_component_structure {
+	val extraInt = extra_integer_component_structure.from_gtv(extra);
+	require(extraInt.min_val &lt; extraInt.max_val, "Min value must be smaller than max value");
+	return extraInt;
+}
+
+function sanitize_gtv_to_integer(gtvValue: gtv, componentStructureExtra: byte_array): integer {
+	val componentValue = integer.from_gtv(gtvValue);
+	val extra = extra_integer_component_structure.from_bytes(componentStructureExtra);
+	require(componentValue &gt;= extra.min_val, "Value &lt;%x&gt; can't be smaller than &lt;%x&gt;".format(componentValue).format(extra.min_val));
+	require(componentValue &lt;= extra.max_val, "Value &lt;%x&gt; can't be greater than &lt;%x&gt;".format(componentValue).format(extra.min_val));
+	return componentValue;
+}
+
+
+function ensureIntegerProperty(e: e.entitee, p: p.property, value: integer) {
+	val isProperty = p.integer_property@?{e, p};
+	
+	if(isProperty != null) {
+		update p.integer_property@{e, p}(.value = value);	
+	} else {
+		create p.integer_property(e, p, value);
+	}
+}</string>
+                            </entry>
+                            <entry key="lib/nfa/core/supported_types/main.rell">
+                                <string>enum type {
+	TEXT,
+	INTEGER,
+	DECIMAL,
+	BYTE_ARRAY,
+	ENUM,
+	NFA
+	//GTV, // TODO
+	// TODO complex_type as GTV by typed and queryable
+	//FT3 // TODO
+}</string>
+                            </entry>
+                            <entry key="lib/nfa/core/supported_types/nfa.rell">
+                                <string>/* **********************
+ *		NFA
+ * ********************** 
+ */
+ 
+import e: ^.entitee;
+import p: ^.property;
+import n: ^.nfa;
+
+struct extra_nfa_component_structure {
+	// This could create a circular problem
+	// TODO Fix this by recursively check nfa.id
+	// TODO maybe extra param in "extra" and ask for the version to select?
+	nfa_id: byte_array; // replace it with nfa? (not byte_array id)
+}
+
+function convert_to_nfa_extra(extra: gtv): extra_nfa_component_structure {
+	val extraNfa = extra_nfa_component_structure.from_gtv(extra);
+	val nfa = (n.nfa@{.id == extraNfa.nfa_id}(nfa_ref = nfa) limit 1).nfa_ref; 
+	return extra_nfa_component_structure(nfa.id);
+}
+
+function sanitize_gtv_to_nfa(gtvValue: gtv, componentStructureExtra: byte_array): e.entitee {
+	val extra = extra_nfa_component_structure.from_bytes(componentStructureExtra);
+	val entityToLink = byte_array.from_gtv(gtvValue);
+	// check if the entity actually belongs to the required type of nfa
+	val propertyValue = e.entitee@{.nfa.id == extra.nfa_id, .id == entityToLink};
+	require(propertyValue.nfa.id == extra.nfa_id);
+	return propertyValue;
+}
+
+function ensureNFAProperty(e: e.entitee, p: p.property, value: e.entitee) {
+	val isProperty = p.nfa_property@?{.entitee == e, p};
+	if(isProperty != null) {
+		update p.nfa_property@{.entitee == e, p}(.value = value);	
+	} else {
+		create p.nfa_property(entitee = e, p, value);
+	}
+}</string>
+                            </entry>
+                            <entry key="lib/nfa/core/supported_types/text.rell">
+                                <string>
+import e: ^.entitee;
+import p: ^.property;
+import t: ^.supported_types;
+
+function ensureTextProperty(e: e.entitee, p: p.property, value: text) {
+	val isProperty = p.text_property@?{e, p};
+	
+	if(isProperty != null) {
+		update p.text_property@{e, p}(.value = value);	
+	} else {
+		create p.text_property(e, p, value);	
+	}
+}</string>
+                            </entry>
+                            <entry key="lib/nfa/ft3/module.rell">
+                                <string>@mount('nfa')
+module;
+
+import .ownership;</string>
+                            </entry>
+                            <entry key="lib/nfa/ft3/ownership/functions.rell">
+                                <string>
+import e: ^^.core.entitee;
+
+
+function require_ownership(e: e.entitee, auth_descriptor_id: byte_array?) {
+	val ownership = ownership@?{e};
+ 	if (ownership != null) {
+ 		require_not_empty(auth_descriptor_id);
+		//ft3.acc.require_auth(ownership.account, auth_descriptor_id, ["N"]);
+		ft3.acc.require_auth(ownership.account, auth_descriptor_id, list&lt;text&gt;());
+ 	}
+}
+
+function setOwner(e: e.entitee, account: ft3.acc.account) {
+	require(ownership@?{e, account} == null);
+	create ownership(e, account);
+}
+
+function setOwnerByAccountId(e: e.entitee, account_id: byte_array) {
+	setOwner(e, ft3.acc.account @ { account_id });
+}
+
+function removeOwner(e: e.entitee, account: ft3.acc.account, auth_descriptor_id: byte_array) {
+	ft3.acc.require_auth(account, auth_descriptor_id, list&lt;text&gt;());
+	val ownership = require_not_empty(ownership@?{e, account});
+	delete ownership;	
+}</string>
+                            </entry>
+                            <entry key="lib/nfa/ft3/ownership/main.rell">
+                                <string>import e: ^^.core.entitee;
+
+namespace ft3 {
+	import acc: ^^^.ft3.account;
+}
+
+entity ownership {
+	key e.entitee, account: ft3.acc.account;
+}
+</string>
+                            </entry>
+                            <entry key="lib/nfa/ft3/ownership/operations.rell">
+                                <string></string>
+                            </entry>
+                            <entry key="lib/nfa/ft3/ownership/queries.rell">
+                                <string>
+import e: ^^.core.entitee;
+import acc: ^^^.ft3.account;
+
+query get_entities_by_owner(nfa_name: text, account_id: byte_array) {
+	val entities = ownership @* { .entitee.nfa.name == nfa_name.lower_case(), .account.id == account_id }.entitee;
+	
+	val entitiyDescriptionList = list&lt;e.entity_description&gt;();
+	for(entitee in entities) {
+		entitiyDescriptionList.add(e.getEntitee(entitee));
+	}
+	return entitiyDescriptionList;
+}</string>
+                            </entry>
+                            <entry key="main/admin/admin.rell">
+                                <string>function require_admin() {
+	require(is_signer(x"024D7A49878382169871F2C7320B6C91EA97C9DE89316996DAE4D3BC5E7DCB9E67"));
+}
+
+</string>
+                            </entry>
+                            <entry key="main/asset.rell">
+                                <string>import .admin;
+
+entity asset_info {
+	key asset: nfa.e.entitee;
+	owner: organization;
+	mutable on_offer: boolean;
+}
+
+
+
+operation create_asset(account_id: byte_array, auth_descriptor_id: byte_array, name, description: text, disposable: integer, image: text) {
+	val user = require_user(account_id, auth_descriptor_id);
+	
+	val assetNFA = getAssetNFA();
+	val entityIdx = (nfa.e.entitee@*{assetNFA}).size()-1;
+	
+	val newAsset = nfa.e.createEntitee(assetNFA,
+		(name, entityIdx).hash(),
+		map&lt;text, gtv&gt;([
+			"name": (name).to_gtv(),
+			"description": (description).to_gtv(),
+			"disposable": (disposable).to_gtv(),
+			"image": (image).to_gtv()
+		])
+	);
+	
+	create asset_info(
+		newAsset,
+		user.organization,
+		false
+	);
+}
+
+operation asset_on_sale(account_id: byte_array, auth_descriptor_id: byte_array, asset_name: name) {
+	val user = require_user(account_id, auth_descriptor_id);
+	
+	update asset_info@{
+		nfa.p.text_property@{ 
+			nfa.p.property@{
+				.name == "name",
+				getAssetNFA()
+			},
+			.value == asset_name
+		}.entitee,
+		.owner == user.organization 
+	}(.on_offer = true);
+}
+
+operation asset_remove_on_sale(account_id: byte_array, auth_descriptor_id: byte_array, asset: nfa.e.entitee) {
+	val user = require_user(account_id, auth_descriptor_id);
+	
+	update asset_info@{
+		asset,
+		.owner == user.organization 
+	}(.on_offer = false);
+}
+
+
+function getAssetNFA(): nfa.n.nfa {
+	return nfa.n.nfa@{
+		.name == "asset"
+	};
+}</string>
+                            </entry>
+                            <entry key="main/location.rell">
+                                <string>import .admin;
+
+entity location {
+	key name: text;
+	longitude: decimal;
+	latitude: decimal;
+	
+	key longitude, latitude;
+}
+
+operation create_location(name: text, longitude: decimal, latitude: decimal) {
+	admin.require_admin();
+	create location(
+		name,
+		longitude, 
+		latitude
+	);
+}
+
+
+query get_location(name) {
+	return location@{
+		name 
+	}(
+		name = .name,
+		longitude = .longitude,
+		latitude = .latitude
+	);
+}</string>
+                            </entry>
+                            <entry key="main/module.rell">
+                                <string>module;
+
+import lf: lib.ft3.ft3_basic_dev;
+
+namespace nfa {
+	import c: lib.nfa.core.component;
+	import e: lib.nfa.core.entitee;
+	import n: lib.nfa.core.nfa;
+	import p: lib.nfa.core.property;
+	import t: lib.nfa.core.supported_types;
+}</string>
+                            </entry>
+                            <entry key="main/nfa_creation.rell">
+                                <string>
+
+// no params so it can be called only one time
+operation create_nfa() {
+
+	
+	val assetNFA = createAssetNFA();
+}
+
+function createAssetNFA(): nfa.n.nfa {
+	val nameComponent = nfa.c.createComponent('name', nfa.t.type.TEXT, null);
+	val descriptionComponent = nfa.c.createComponent('description', nfa.t.type.TEXT, null);
+	val disposableComponent = nfa.c.createComponent("disposable", nfa.t.type.INTEGER, nfa.t.extra_integer_component_structure(min_val = 0, max_val = 1).to_gtv());
+	val imageURLComponent = nfa.c.createComponent('image_url', nfa.t.type.TEXT, null);
+	
+	val assetNFA = nfa.n.easyCreateNFA(
+		"asset",
+		"Asset that can be traded",
+		integer.MAX_VALUE,
+		map&lt;name, (byte_array, boolean, boolean)&gt;([
+			"name": (nameComponent.id, true, true),
+			"description": (descriptionComponent.id, false, true),
+			"disposable": (disposableComponent.id, true, true),
+			"image": (imageURLComponent.id, true, true)
+		])
+	);
+	
+	return assetNFA;
+}</string>
+                            </entry>
+                            <entry key="main/organization.rell">
+                                <string>import .admin;
+
+enum organization_type {
+	HOSPITAL,
+	GOVERNMENTAL_ORGANIZATION
+}
+
+entity organization {
+	key name;
+	organization_type;
+	location;
+}
+
+operation create_organization(name, organization_type_text: text, location_name: name) {
+	admin.require_admin();
+	
+	var organization_type_: organization_type;
+	
+	when(organization_type_text) {
+		"HOSPITAL" -&gt; organization_type_ = organization_type.HOSPITAL;
+		"GOVERNMENTAL_ORGANIZATION" -&gt; organization_type_ = organization_type.GOVERNMENTAL_ORGANIZATION;
+		else -&gt; organization_type_ = organization_type.HOSPITAL;
+	} 
+	
+	create organization(
+		name,
+		.organization_type = organization_type_,
+		location@{location_name}
+	);
+}
+
+
+query get_organization(name) {
+	return organization@{
+		name
+	}(
+		name = .name,
+		organization_type = .organization_type,
+		location = .location.name
+	);
+}
+</string>
+                            </entry>
+                            <entry key="main/user.rell">
+                                <string>import acc: lib.ft3.account; 
+import admin: .admin;
+
+
+
+entity user {
+	key account: acc.account;
+   	key username: text;
+   	organization;
+}
+
+operation add_user(account_id: byte_array, username: text, organization_name: name) {
+	admin.require_admin();
+	val account = acc.account@{.id == account_id};
+	
+	create user(account, username, organization@{organization_name});
+}
+ 
+ 
+function require_user(account_id: byte_array, auth_descriptor_id: byte_array): user {
+	val user = user@{.account== acc.account@{.id == account_id}};
+	acc.require_auth(user.account, auth_descriptor_id, list&lt;text&gt;());
+	return user;
+}
+
+query get_account(account_id: byte_array) {
+	return user@?{acc.account@{ .id == account_id }}(
+		account_id = .account.id,
+		username = .username,
+		organization = .organization 
+	);
+}</string>
+                            </entry>
+                        </dict>
+                    </entry>
+                </dict>
+            </entry>
+        </dict>
+    </entry>
+    <entry key="signers">
+        <array>
+            <bytea>0259EDED3870345E02DA2EAD6206478B64D03CE7DADFB4B99B59F9B0F1855C7330</bytea>
+        </array>
+    </entry>
+</dict>

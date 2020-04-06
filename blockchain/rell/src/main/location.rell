@@ -1,0 +1,29 @@
+import .admin;
+
+entity location {
+	key name: text;
+	longitude: decimal;
+	latitude: decimal;
+	
+	key longitude, latitude;
+}
+
+operation create_location(name: text, longitude: decimal, latitude: decimal) {
+	admin.require_admin();
+	create location(
+		name,
+		longitude, 
+		latitude
+	);
+}
+
+
+query get_location(name) {
+	return location@{
+		name 
+	}(
+		name = .name,
+		longitude = .longitude,
+		latitude = .latitude
+	);
+}

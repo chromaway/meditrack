@@ -1,0 +1,37 @@
+/* **********************
+ *		INTEGER
+ * ********************** 
+ */
+ 
+import e: ^.entitee;
+import p: ^.property;
+ 
+struct extra_integer_component_structure {
+	min_val: integer; // minimum value allowed (e.g. negative numbers not allowed) 
+	max_val: integer; // max value allowed or byte_lenght
+}
+
+function convert_to_integer_extra(extra: gtv): extra_integer_component_structure {
+	val extraInt = extra_integer_component_structure.from_gtv(extra);
+	require(extraInt.min_val < extraInt.max_val, "Min value must be smaller than max value");
+	return extraInt;
+}
+
+function sanitize_gtv_to_integer(gtvValue: gtv, componentStructureExtra: byte_array): integer {
+	val componentValue = integer.from_gtv(gtvValue);
+	val extra = extra_integer_component_structure.from_bytes(componentStructureExtra);
+	require(componentValue >= extra.min_val, "Value <%x> can't be smaller than <%x>".format(componentValue).format(extra.min_val));
+	require(componentValue <= extra.max_val, "Value <%x> can't be greater than <%x>".format(componentValue).format(extra.min_val));
+	return componentValue;
+}
+
+
+function ensureIntegerProperty(e: e.entitee, p: p.property, value: integer) {
+	val isProperty = p.integer_property@?{e, p};
+	
+	if(isProperty != null) {
+		update p.integer_property@{e, p}(.value = value);	
+	} else {
+		create p.integer_property(e, p, value);
+	}
+}

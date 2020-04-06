@@ -3,6 +3,8 @@
 import React, { Component, useState } from 'react';
 import { Button, Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap';
 
+import {getEquipment} from './equipment';
+
 class ItemView extends Component {
     constructor(props) {
 
@@ -11,7 +13,6 @@ class ItemView extends Component {
         //     modal: props.isOpen
         // }
         this.onClose = props.onClose;
-
     }
     
 // const  = (props) => {
@@ -35,15 +36,33 @@ class ItemView extends Component {
         var modal = this.props.isOpen;
 //        var toggle = this.toggle;
         var close = this.props.onClose;
+        if (!this.props.isOpen) {
+            return (<div></div>)
+        }
+
+        var eqList= getEquipment()
+        console.log("Hello");
+        console.log(eqList);
+        var id = this.props.id;
+        console.log(id);
+            
+        var eq = eqList[id] || {};
+        console.log(eq);
+
+        
      return (
        <div>
          <Modal isOpen={modal} toggle={close}>
-           <ModalHeader toggle={close}>Item</ModalHeader>
-           <ModalBody>
-             Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+           <ModalHeader toggle={close}>Item details</ModalHeader>
+             <ModalBody>
+             <p>Id: {this.props.id}</p>
+             <p>Date: {eq.date}</p>
+             <p>Status: {eq.status}</p>
+             <p>Quantity: {eq.quantity}</p>
+             <p>From: {eq.from}</p>                          
            </ModalBody>
            <ModalFooter>
-             <Button color="primary" onClick={close}>Do Something</Button>{' '}
+             <Button color="primary" onClick={close}>Request</Button>{' '}
              <Button color="secondary" onClick={close}>Cancel</Button>
            </ModalFooter>
          </Modal>

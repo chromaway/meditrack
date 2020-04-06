@@ -1,0 +1,32 @@
+
+import n: ^.nfa;
+import p: ^.property;
+import own: ^^.ft3.ownership;
+import acc: ^^^.ft3.account;
+
+operation create_entity(
+	nfa_name: text, 
+	new_id: byte_array, 
+	properties: list<p.property_value>,
+	account_id: byte_array, 
+	auth_descriptor_id: byte_array
+) {
+	acc.require_auth(acc.account @ { account_id }, auth_descriptor_id, list<text>());
+	print("nfa name: ", nfa_name);
+	val id = (nfa_name.lower_case(), chain_context.blockchain_rid).hash();
+	print("id: ", id);
+	val n = n.nfa @ { .id == id };
+	
+	val m = map<text, gtv>();
+	
+	for (property in properties) {
+		m.put(property.name, property.value);
+	}
+	
+	print("create entity");
+	
+	val entitee = createEntitee(n, new_id, m);
+	
+	// should we check if signer is owner of the account?
+	own.setOwnerByAccountId(entitee, account_id);
+}

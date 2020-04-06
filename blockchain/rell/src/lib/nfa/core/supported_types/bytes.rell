@@ -1,0 +1,13 @@
+
+import e: ^.entitee;
+import p: ^.property;
+
+function ensureBytesProperty(e: e.entitee, p: p.property, value: byte_array) {
+	val isProperty = p.bytes_property@?{e, p};
+	
+	if(isProperty != null) {
+		update p.bytes_property@{e, p}(.value = value);	
+	} else {
+		create p.bytes_property(e, p, value);
+	}	
+}
